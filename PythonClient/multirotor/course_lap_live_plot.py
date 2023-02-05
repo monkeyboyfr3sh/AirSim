@@ -67,21 +67,24 @@ def magnitude(vector):
     return math.sqrt(sum(pow(element, 2) for element in vector))
 
 if __name__=="__main__":
-    LOG_FILENAME = 'log.csv'
 
-    # connect to the AirSim simulator
+    SCRIPT_TIME_SECONDS = 30
+
+    # Connect to AirSim
     client = airsim.MultirotorClient()
     client.confirmConnection()
-    # client.enableApiControl(True)
 
+    # Init the sim utilites
     gps_converter_utility = gps_utils.GPS_utils()
     coordinates = get_gps_coorinates(client)
     gps_converter_utility.setENUorigin(coordinates[2],coordinates[1],coordinates[0])
     start_timestamp = timestamp = get_timestamp(client)
 
-    create_file = True
-    while(1):
- 
+    # Now run script for set period
+    script_start = time.time()
+    client.simPause(False)
+    while( (time.time()-script_start) < SCRIPT_TIME_SECONDS ):
+
         # Get velocity and coordinates
         velocity = get_velocity(client)
         velocity_magnitude = magnitude(velocity)
@@ -131,5 +134,28 @@ if __name__=="__main__":
         # ax.clear()
         ax2.clear()
         ax3.clear()
+    
+    client.simPause(True)
 
-    plt.show()
+    while(1):
+        # Plot the new data point
+        # ax.scatter(longitude, latitude, altitude, c = speed , cmap = "magma")
+        ax2.scatter(x_coord,y_coord,z_coord,c = speed , cmap = "magma")
+        ax3.scatter(timestamp_list, speed, c = speed , cmap = "magma")
+
+        # # Set the axis labels
+        # ax.set_xlabel('Longitude')
+        # ax.set_ylabel('Latitude')
+        # ax.set_zlabel('Altitude')
+
+        ax2.set_title('Position (heat map by velocity)')
+        ax2.set_xlabel('x-coord')
+        ax2.set_ylabel('y-cood')
+        ax2.set_zlabel('z-coord')
+
+        ax3.set_title('Velocity vs Time')
+        ax3.set_xlabel('Time')
+        ax3.set_ylabel('Speed')
+        plt.draw() # Redraw the plot
+        input("Now waiting to view data... Press enter to kill script.")
+        break
