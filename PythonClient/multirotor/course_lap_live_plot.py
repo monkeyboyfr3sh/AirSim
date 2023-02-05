@@ -40,10 +40,9 @@ v_z = []
 speed_list = []
 
 # Create plots
-fig = plt.figure(figsize=(12,12))
-time_ax = fig.add_subplot(2,2,(1,2))
-velocity_3d_ax = fig.add_subplot(2,2,3, projection='3d')
-spatial_ax = fig.add_subplot(2,2,4, projection='3d')
+fig = plt.figure(figsize=(6,10))
+time_ax = fig.add_subplot(2,1,1)
+spatial_ax = fig.add_subplot(2,1,2, projection='3d')
 
 if __name__=="__main__":
 
@@ -84,25 +83,16 @@ if __name__=="__main__":
 
         # Plot the new data point
         time_ax.scatter(timestamp_list, speed_list, c = speed_list , cmap = "magma")
-        velocity_3d_ax.quiver(position.x_val, position.y_val, position.z_val, velocity.x_val, velocity.y_val, velocity.z_val)
+        spatial_ax.quiver(position.x_val, position.y_val, -position.z_val, velocity.x_val, velocity.y_val, -velocity.z_val)
         draw_sphere_radius = max(max(speed_list),SPHERE_RADIUS)
-        sphere = Sphere([position.x_val, position.y_val, position.z_val], draw_sphere_radius)
-        sphere.plot_3d(velocity_3d_ax, alpha=0.2)
+        sphere = Sphere([position.x_val, position.y_val, -position.z_val], draw_sphere_radius)
+        sphere.plot_3d(spatial_ax, alpha=0.2)
         spatial_ax.scatter(x_coord,y_coord,z_coord,c = speed_list , cmap = "magma")
 
         # Set the axis labels
         time_ax.set_title('Speed vs Time')
         time_ax.set_xlabel('Time')
         time_ax.set_ylabel('Speed')
-        
-        velocity_3d_ax.set_title('Velocity Vector')
-        velocity_3d_ax.set_xlabel('x-velocity')
-        velocity_3d_ax.set_ylabel('y-velocity')
-        velocity_3d_ax.set_zlabel('z-velocity')
-        limit = draw_sphere_radius*1.2 
-        velocity_3d_ax.set_xlim3d([position.x_val-limit, position.x_val+limit])
-        velocity_3d_ax.set_ylim3d([position.y_val-limit, position.y_val+limit])
-        velocity_3d_ax.set_zlim3d([position.z_val-limit, position.z_val+limit])
         
         spatial_ax.set_title('Position (heat map by speed)')
         spatial_ax.set_xlabel('x-coord')
@@ -114,7 +104,7 @@ if __name__=="__main__":
 
         # Clear the plot to plot new data points
         time_ax.clear()
-        velocity_3d_ax.clear()
+        spatial_ax.clear()
         spatial_ax.clear()
     
     client.simPause(True)
@@ -122,30 +112,16 @@ if __name__=="__main__":
     while(1):
         # Plot the new data point
         time_ax.scatter(timestamp_list, speed_list, c = speed_list , cmap = "magma")
-        velocity_3d_ax.scatter(
-            [0,velocity.x_val], [0,velocity.y_val], [0,velocity.z_val],
-            c = [velocity_magnitude,velocity_magnitude] , cmap = "magma")
-        sphere = Sphere([0, 0, 0], 2)
-        sphere.plot_3d(velocity_3d_ax, alpha=0.2)
+        spatial_ax.quiver(position.x_val, position.y_val, -position.z_val, velocity.x_val, velocity.y_val, velocity.z_val)
+        draw_sphere_radius = max(max(speed_list),SPHERE_RADIUS)
+        sphere = Sphere([position.x_val, position.y_val, -position.z_val], draw_sphere_radius)
+        sphere.plot_3d(spatial_ax, alpha=0.2)
         spatial_ax.scatter(x_coord,y_coord,z_coord,c = speed_list , cmap = "magma")
 
         # Set the axis labels
         time_ax.set_title('Velocity vs Time')
         time_ax.set_xlabel('Time')
         time_ax.set_ylabel('Speed')
-
-        velocity_3d_ax.set_title('Velocity Vector')
-        velocity_3d_ax.set_xlabel('x-velocity')
-        velocity_3d_ax.set_ylabel('y-velocity')
-        velocity_3d_ax.set_zlabel('z-velocity')
-        limit = 0 
-        if (velocity_magnitude<SPHERE_RADIUS):
-            limit = SPHERE_RADIUS
-        else:
-            limit = velocity_magnitude
-        velocity_3d_ax.set_xlim3d([-limit, limit])
-        velocity_3d_ax.set_ylim3d([-limit, limit])
-        velocity_3d_ax.set_zlim3d([-limit, limit])
 
         spatial_ax.set_title('Position (heat map by velocity)')
         spatial_ax.set_xlabel('x-coord')
