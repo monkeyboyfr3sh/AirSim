@@ -1,3 +1,4 @@
+import get_custom_paths
 import setup_path
 import airsim
 
