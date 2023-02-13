@@ -22,7 +22,14 @@ SPHERE_RADIUS = 2
 input_message = "Now waiting to view data...\n" +\
                 "1      - Continue sim for {} seconds, DO NOT delete data\n".format(SCRIPT_TIME_SECONDS) +\
                 "2      - Continue sim for {} seconds, DO delete data\n".format(SCRIPT_TIME_SECONDS) +\
+                "3      - Continue sim for {} seconds, DO NOT delete data, start task again\n".format(SCRIPT_TIME_SECONDS) +\
+                "4      - Continue sim for {} seconds, DO delete data, start task again\n".format(SCRIPT_TIME_SECONDS) +\
                 "else   - Kill script\n"
+
+def start_task_thread():
+    task_thread = threading.Thread(target=run_nh_circle_path)
+    task_thread.start()
+    return task_thread
 
 def collision_handler(client_manager: AirSimClientManager):
     # First pause sim
@@ -48,9 +55,9 @@ def main():
     script_start = time.time()
     client_manager.simPause(False)
 
+    # Start task
     thread_dead_check = True
-    task_thread = threading.Thread(target=run_nh_circle_path)
-    task_thread.start()
+    task_thread = start_task_thread()
 
     while ( True ):
 
@@ -103,10 +110,24 @@ def main():
                 client_manager.init_client_data()
                 script_start = time.time() # update start to continue sim
                 client_manager.simPause(False)
+            elif (command == "3"):
+                script_start = time.time() # update start to continue sim
+                client_manager.simPause(False)
+
+                # Start task again
+                thread_dead_check = True
+                task_thread = start_task_thread()
+            elif (command == "4"):
+                client_manager.init_client_data()
+                script_start = time.time() # update start to continue sim
+                client_manager.simPause(False)
+
+                # Start task again
+                thread_dead_check = True
+                task_thread = start_task_thread()
             else:
                 client_manager.simPause(False)
                 break
-
             
             # Prevent dead thread from entering again if it is already dead
             thread_dead_check = task_thread.is_alive()
