@@ -1,16 +1,10 @@
 import airsim
 from airsim.types import GeoPoint,Vector3r
 from airsim.client import LidarData
-import math
 import numpy
 
 class AirSimClientManager():
     def __init__(self, airsim_path: str = None) -> None:
-    
-        if (airsim_path is None):
-            print("Not starting airsim manually")
-        else:
-            self.start_airsim(airsim_path)
 
         # Connect to AirSim
         self.client = airsim.MultirotorClient()
@@ -21,9 +15,6 @@ class AirSimClientManager():
 
         # Get sim start timestamp
         self.start_timestamp = self.get_gps_timestamp()
-
-    def start_airsim(self, airsim_path: str):
-        print(f"Starting airsim using path '{airsim_path}'!")
 
     def simPause(self, pause_set):
         self.client.simPause(pause_set)
@@ -53,8 +44,8 @@ class AirSimClientManager():
         lidar_data = self.client.getLidarData()
         self.lidar_data_list.append(lidar_data)
         points = self.parse_lidarData(lidar_data)
-        print("time_stamp: %d number_of_points: %d" % (lidar_data.time_stamp, len(points)))
-        print( numpy.shape(points), numpy.average(points) )
+        # print("time_stamp: %d number_of_points: %d" % (lidar_data.time_stamp, len(points)))
+        # print( numpy.shape(points), numpy.average(points) )
         self.lidar_points_average_list.append(numpy.average(points))
         # print("\t\tlidar position: %s" % (pprint.pformat(lidar_data.pose.position)))
         # print("\t\tlidar orientation: %s" % (pprint.pformat(lidar_data.pose.orientation)))

@@ -1,4 +1,4 @@
-import get_custom_paths
+import get_harness_paths
 import setup_path
 import airsim
 
@@ -13,7 +13,7 @@ import time
 
 from custom_util.airsim_data_utils import AirSimClientManager
 
-SCRIPT_TIME_SECONDS = 90
+SCRIPT_TIME_SECONDS = 50
 SPHERE_RADIUS = 2
 input_message = "Now waiting to view data...\n" +\
                 "1      - Continue sim for {} seconds, DO NOT delete data\n".format(SCRIPT_TIME_SECONDS) +\
@@ -34,13 +34,9 @@ def collision_handler(client_manager: AirSimClientManager):
 
 def main():
     # Create plots
-    fig_1 = plt.figure(figsize=(6,10))
-    time_ax_1 = fig_1.add_subplot(2,1,1)
-    spatial_ax_1 = fig_1.add_subplot(2,2,2, projection='3d')
-    
-    fig_2 = plt.figure(figsize=(6,10))
-    time_ax_2 = fig_1.add_subplot(2,1,1)
-    spatial_ax_2 = fig_2.add_subplot(2,1,2, projection='3d')
+    fig_1 = plt.figure(figsize=(10,6))
+    time_ax_1 = fig_1.add_subplot(1,2,1)
+    spatial_ax_1 = fig_1.add_subplot(1,2,2, projection='3d')
 
     # Create client manager
     client_manager = AirSimClientManager()
@@ -65,8 +61,6 @@ def main():
         sphere = Sphere([client_manager.position.x_val, client_manager.position.y_val, -client_manager.position.z_val], draw_sphere_radius)
         sphere.plot_3d(spatial_ax_1, alpha=0.2)
         spatial_ax_1.scatter(client_manager.x_coord,client_manager.y_coord,client_manager.z_coord,c = client_manager.speed_list , cmap = "magma")
-
-        time_ax_2.scatter(client_manager.timestamp_list, client_manager.lidar_points_average_list, c = client_manager.lidar_points_average_list , cmap = "magma")
 
         # Set the axis labels
         time_ax_1.set_title('Speed vs Time')
@@ -105,8 +99,6 @@ def main():
         # Clear the plot to plot new data points
         time_ax_1.clear()
         spatial_ax_1.clear()
-        time_ax_2.clear()
-        spatial_ax_2.clear()
 
 if __name__=="__main__":
     main()
