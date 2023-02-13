@@ -1,5 +1,5 @@
 import airsim
-from airsim.types import GeoPoint,Vector3r
+from airsim.types import GeoPoint,Vector3r,CollisionInfo
 from airsim.client import LidarData
 import numpy
 
@@ -28,6 +28,8 @@ class AirSimClientManager():
         self.timestamp = (self.get_gps_timestamp()-self.start_timestamp) / 1000000000
         self.position = self.get_multirotor_position()
         self.collision_info = self.client.simGetCollisionInfo()
+        if(self.collision_info.has_collided):
+            self.collision_handler(self.collision_info)
 
         # Add the new data
         self.x_coord.append(self.position.x_val)
@@ -41,14 +43,28 @@ class AirSimClientManager():
         self.timestamp_list.append(self.timestamp)
         self.speed_list.append(self.velocity_magnitude)
 
-        lidar_data = self.client.getLidarData()
-        self.lidar_data_list.append(lidar_data)
-        points = self.parse_lidarData(lidar_data)
-        # print("time_stamp: %d number_of_points: %d" % (lidar_data.time_stamp, len(points)))
-        # print( numpy.shape(points), numpy.average(points) )
-        self.lidar_points_average_list.append(numpy.average(points))
-        # print("\t\tlidar position: %s" % (pprint.pformat(lidar_data.pose.position)))
-        # print("\t\tlidar orientation: %s" % (pprint.pformat(lidar_data.pose.orientation)))
+        # lidar_data = self.client.getLidarData()
+        # self.lidar_data_list.append(lidar_data)
+        # points = self.parse_lidarData(lidar_data)
+        # # print("time_stamp: %d number_of_points: %d" % (lidar_data.time_stamp, len(points)))
+        # # print( numpy.shape(points), numpy.average(points) )
+        # self.lidar_points_average_list.append(numpy.average(points))
+        # # print("\t\tlidar position: %s" % (pprint.pformat(lidar_data.pose.position)))
+        # # print("\t\tlidar orientation: %s" % (pprint.pformat(lidar_data.pose.orientation)))
+
+    def collision_handler(self, collision_info: CollisionInfo):
+        print("collision event")
+
+        # First pause sim
+        self.simPause(True)
+
+        self.collision_x_data_list.append(collision_info.position.x_val)
+        self.collision_y_data_list.append(collision_info.position.y_val)
+        self.collision_z_data_list.append(-collision_info.position.z_val)
+        self.collision_time_data_list.append(collision_info.time_stamp)
+
+        # Now resume the sim
+        self.simPause(False)
 
     def parse_lidarData(self, data):
 
@@ -69,6 +85,11 @@ class AirSimClientManager():
         self.speed_list = []
         self.lidar_data_list = []
         self.lidar_points_average_list = []
+        
+        self.collision_x_data_list = []
+        self.collision_y_data_list = []
+        self.collision_z_data_list = []
+        self.collision_time_data_list = []
 
     def get_gps_coordinates(self) -> GeoPoint:
         gps_data = self.client.getGpsData()

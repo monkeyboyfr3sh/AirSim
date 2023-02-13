@@ -13,11 +13,10 @@ import time
 
 import threading
 
-import tasks
 from tasks.nh_circle import run_nh_circle_path
 from util.airsim_data_utils import AirSimClientManager
 
-SCRIPT_TIME_SECONDS = 70
+SCRIPT_TIME_SECONDS = 0
 SPHERE_RADIUS = 2
 input_message = "Now waiting to view data...\n" +\
                 "1      - Continue sim for {} seconds, DO NOT delete data\n".format(SCRIPT_TIME_SECONDS) +\
@@ -27,20 +26,9 @@ input_message = "Now waiting to view data...\n" +\
                 "else   - Kill script\n"
 
 def start_task_thread():
-    task_thread = threading.Thread(target=run_nh_circle_path)
+    task_thread = threading.Thread(target=run_nh_circle_path,args=(25,))
     task_thread.start()
     return task_thread
-
-def collision_handler(client_manager: AirSimClientManager):
-    # First pause sim
-    client_manager.simPause(True)
-
-    # Handle the collision event
-    print("Collision event!!!!")
-    time.sleep(.1)
-
-    # Now resume the sim
-    client_manager.simPause(False)
 
 def main():
     # Create plots
@@ -64,9 +52,6 @@ def main():
         # Do a sampling round of the sensor data
         client_manager.sample_client_data()
 
-        if(client_manager.collision_info.has_collided):
-            collision_handler(client_manager)
-
         # Plot the new speed data with heat map
         time_ax_1.scatter(client_manager.timestamp_list, client_manager.speed_list, c = client_manager.speed_list , cmap = "magma")
         
@@ -76,6 +61,10 @@ def main():
         sphere = Sphere([client_manager.position.x_val, client_manager.position.y_val, -client_manager.position.z_val], draw_sphere_radius)
         sphere.plot_3d(spatial_ax_1, alpha=0.2)
         spatial_ax_1.scatter(client_manager.x_coord,client_manager.y_coord,client_manager.z_coord,c = client_manager.speed_list , cmap = "magma")
+        spatial_ax_1.scatter(   client_manager.collision_x_data_list,
+                                client_manager.collision_y_data_list,
+                                client_manager.collision_z_data_list,
+                                c = 'red',linewidths=5)
 
         # Set the axis labels
         time_ax_1.set_title('Speed vs Time')
@@ -92,7 +81,7 @@ def main():
         plt.pause(0.1)
 
         # Check for sim runtime to elapse
-        if  ( (time.time()-script_start) > SCRIPT_TIME_SECONDS ) or\
+        if  ( (time.time()-script_start) > SCRIPT_TIME_SECONDS and (not (SCRIPT_TIME_SECONDS==0)) ) or\
             ( (not ( task_thread.is_alive() )) and (thread_dead_check) ):
             
             # Pause the sim
@@ -138,4 +127,3 @@ def main():
 
 if __name__=="__main__":
     main()
-    # print('')
