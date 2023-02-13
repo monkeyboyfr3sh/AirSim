@@ -11,9 +11,13 @@ from mpl_toolkits.mplot3d import Axes3D
 from skspatial.objects import Sphere
 import time
 
-from custom_util.airsim_data_utils import AirSimClientManager
+import threading
 
-SCRIPT_TIME_SECONDS = 50
+import tasks
+from tasks.nh_circle import run_nh_circle_path
+from util.airsim_data_utils import AirSimClientManager
+
+SCRIPT_TIME_SECONDS = 70
 SPHERE_RADIUS = 2
 input_message = "Now waiting to view data...\n" +\
                 "1      - Continue sim for {} seconds, DO NOT delete data\n".format(SCRIPT_TIME_SECONDS) +\
@@ -31,7 +35,6 @@ def collision_handler(client_manager: AirSimClientManager):
     # Now resume the sim
     client_manager.simPause(False)
 
-
 def main():
     # Create plots
     fig_1 = plt.figure(figsize=(10,6))
@@ -44,6 +47,11 @@ def main():
     # Now run script for set period
     script_start = time.time()
     client_manager.simPause(False)
+
+    thread_dead_check = True
+    task_thread = threading.Thread(target=run_nh_circle_path)
+    task_thread.start()
+
     while ( True ):
 
         # Do a sampling round of the sensor data
@@ -77,7 +85,9 @@ def main():
         plt.pause(0.1)
 
         # Check for sim runtime to elapse
-        if ( (time.time()-script_start) > SCRIPT_TIME_SECONDS ):
+        if  ( (time.time()-script_start) > SCRIPT_TIME_SECONDS ) or\
+            ( (not ( task_thread.is_alive() )) and (thread_dead_check) ):
+            
             # Pause the sim
             client_manager.simPause(True)
             
@@ -94,7 +104,12 @@ def main():
                 script_start = time.time() # update start to continue sim
                 client_manager.simPause(False)
             else:
+                client_manager.simPause(False)
                 break
+
+            
+            # Prevent dead thread from entering again if it is already dead
+            thread_dead_check = task_thread.is_alive()
 
         # Clear the plot to plot new data points
         time_ax_1.clear()
@@ -102,3 +117,4 @@ def main():
 
 if __name__=="__main__":
     main()
+    # print('')
