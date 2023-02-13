@@ -17,12 +17,9 @@ from tasks.rc import run_rc_path
 from util.airsim_data_utils import AirSimClientManager
 
 SCRIPT_TIME_SECONDS = 0
-SPHERE_RADIUS = 2
 input_message = "Now waiting to view data...\n" +\
-                "1      - Continue sim for {} seconds, DO NOT delete data\n".format(SCRIPT_TIME_SECONDS) +\
-                "2      - Continue sim for {} seconds, DO delete data\n".format(SCRIPT_TIME_SECONDS) +\
-                "3      - Continue sim for {} seconds, DO NOT delete data, start task again\n".format(SCRIPT_TIME_SECONDS) +\
-                "4      - Continue sim for {} seconds, DO delete data, start task again\n".format(SCRIPT_TIME_SECONDS) +\
+                "1      - Continue sim for {} seconds, DO NOT delete data, start task again\n".format(SCRIPT_TIME_SECONDS) +\
+                "2      - Continue sim for {} seconds, DO delete data, start task again\n".format(SCRIPT_TIME_SECONDS) +\
                 "else   - Kill script\n"
 
 def start_task_thread():
@@ -54,12 +51,10 @@ def main():
 
         # Plot the new speed data with heat map
         time_ax_1.scatter(client_manager.timestamp_list, client_manager.speed_list, c = client_manager.speed_list , cmap = "magma")
+        time_ax_1.vlines(client_manager.collision_time_data_list,0,max(client_manager.speed_list),colors='red',linestyles='dashdot')
         
         # Now plot speed data onto spatial map
         spatial_ax_1.quiver(client_manager.position.x_val, client_manager.position.y_val, -client_manager.position.z_val, client_manager.velocity.x_val, client_manager.velocity.y_val, -client_manager.velocity.z_val)
-        draw_sphere_radius = max(max(client_manager.speed_list),SPHERE_RADIUS)
-        sphere = Sphere([client_manager.position.x_val, client_manager.position.y_val, -client_manager.position.z_val], draw_sphere_radius)
-        sphere.plot_3d(spatial_ax_1, alpha=0.2)
         spatial_ax_1.scatter(client_manager.x_coord,client_manager.y_coord,client_manager.z_coord,c = client_manager.speed_list , cmap = "magma")
         spatial_ax_1.scatter(   client_manager.collision_x_data_list,
                                 client_manager.collision_y_data_list,
@@ -95,18 +90,11 @@ def main():
             if (command == "1"):
                 script_start = time.time() # update start to continue sim
                 client_manager.simPause(False)
-            elif (command == "2"):
-                client_manager.init_client_data()
-                script_start = time.time() # update start to continue sim
-                client_manager.simPause(False)
-            elif (command == "3"):
-                script_start = time.time() # update start to continue sim
-                client_manager.simPause(False)
 
                 # Start task again
                 thread_dead_check = True
                 task_thread = start_task_thread()
-            elif (command == "4"):
+            elif (command == "2"):
                 client_manager.init_client_data()
                 script_start = time.time() # update start to continue sim
                 client_manager.simPause(False)

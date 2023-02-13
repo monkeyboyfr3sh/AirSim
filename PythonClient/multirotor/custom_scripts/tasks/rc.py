@@ -7,5 +7,5 @@ import time
 
 def run_rc_path(speed):
     while(1):
-        command = input("Press any key to kill sim")
+        command = input("Press any key to kill sim\n")
         break

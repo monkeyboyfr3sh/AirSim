@@ -53,15 +53,15 @@ class AirSimClientManager():
         # # print("\t\tlidar orientation: %s" % (pprint.pformat(lidar_data.pose.orientation)))
 
     def collision_handler(self, collision_info: CollisionInfo):
-        print("collision event")
-
         # First pause sim
         self.simPause(True)
+
+        timestamp = (collision_info.time_stamp-self.start_timestamp) / 1000000000
 
         self.collision_x_data_list.append(collision_info.position.x_val)
         self.collision_y_data_list.append(collision_info.position.y_val)
         self.collision_z_data_list.append(-collision_info.position.z_val)
-        self.collision_time_data_list.append(collision_info.time_stamp)
+        self.collision_time_data_list.append(timestamp)
 
         # Now resume the sim
         self.simPause(False)
