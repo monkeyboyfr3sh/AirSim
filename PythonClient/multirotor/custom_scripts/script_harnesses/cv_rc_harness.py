@@ -9,26 +9,28 @@ import time
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from skspatial.objects import Sphere
+import time
 
 import threading
 
-import numpy as np
-import matplotlib.pylab as pl
-
-from tasks.nh_circle import run_nh_circle_path
+from tasks.rc import run_rc_path
+from tasks.cv_yolo import run_yolo_rc_path
 from util.airsim_data_utils import AirSimClientManager
 
-SCRIPT_TIME_SECONDS = 0
 DRONE_SPEED = 20
+SCRIPT_TIME_SECONDS = 0
 input_message = "Now waiting to view data...\n" +\
-                "1      - Continue sim for {} seconds, DO NOT delete data\n".format(SCRIPT_TIME_SECONDS) +\
-                "2      - Continue sim for {} seconds, DO delete data\n".format(SCRIPT_TIME_SECONDS) +\
-                "3      - Continue sim for {} seconds, DO NOT delete data, start task again\n".format(SCRIPT_TIME_SECONDS) +\
-                "4      - Continue sim for {} seconds, DO delete data, start task again\n".format(SCRIPT_TIME_SECONDS) +\
+                "1      - Continue sim for {} seconds, DO NOT delete data, start task again\n".format(SCRIPT_TIME_SECONDS) +\
+                "2      - Continue sim for {} seconds, DO delete data, start task again\n".format(SCRIPT_TIME_SECONDS) +\
                 "else   - Kill script\n"
 
-def start_task_thread():
-    task_thread = threading.Thread(target=run_nh_circle_path,args=(DRONE_SPEED,))
+def start_rc_task_thread():
+    task_thread = threading.Thread(target=run_rc_path,args=(DRONE_SPEED,))
+    task_thread.start()
+    return task_thread
+
+def start_cv_task_thread(client: airsim.MultirotorClient):
+    task_thread = threading.Thread(target=run_yolo_rc_path,args=("scene",))
     task_thread.start()
     return task_thread
 
@@ -45,9 +47,12 @@ def main():
     script_start = time.time()
     client_manager.simPause(False)
 
-    # Start task
+    # Start rc task and wait for it to exit
     thread_dead_check = True
-    task_thread = start_task_thread()
+    # rc_task_thread = start_rc_task_thread()
+    # rc_task_thread.join()
+
+    task_thread = start_cv_task_thread(client_manager.client)
 
     while ( True ):
 
@@ -105,7 +110,7 @@ def main():
 
                 # Start task again
                 thread_dead_check = True
-                task_thread = start_task_thread()
+                task_thread = start_cv_task_thread()
             elif (command == "4"):
                 client_manager.init_client_data()
                 script_start = time.time() # update start to continue sim
@@ -113,7 +118,7 @@ def main():
 
                 # Start task again
                 thread_dead_check = True
-                task_thread = start_task_thread()
+                task_thread = start_cv_task_thread()
             else:
                 client_manager.simPause(False)
                 break

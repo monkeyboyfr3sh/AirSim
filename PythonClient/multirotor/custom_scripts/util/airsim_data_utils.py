@@ -1,6 +1,7 @@
 import airsim
 from airsim.types import GeoPoint,Vector3r,CollisionInfo
 from airsim.client import LidarData
+import cv2
 import numpy
 
 class AirSimClientManager():
