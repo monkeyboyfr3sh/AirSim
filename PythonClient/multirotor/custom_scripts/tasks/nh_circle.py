@@ -57,7 +57,6 @@ def run_nh_circle_path(speed):
                                         airsim.Vector3r(0,0,z)],
                                 speed, 120,
                                 airsim.DrivetrainType.ForwardOnly, airsim.YawMode(False,0), 20, 1).join()
-
     # drone will over-shoot so we bring it back to the start point before landing.
     client.moveToPositionAsync(0,0,z_base,1).join()
     print("landing...")

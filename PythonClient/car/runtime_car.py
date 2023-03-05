@@ -9,7 +9,7 @@ def runSingleCar(id: int):
     client = airsim.CarClient()
     client.confirmConnection()
 
-    vehicle_name = f"Car_{id}"
+    vehicle_name = f"Car{id}"
     pose = airsim.Pose(airsim.Vector3r(0, 7*id, 0),
                        airsim.Quaternionr(0, 0, 0, 0))
 
