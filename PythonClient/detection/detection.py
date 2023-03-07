@@ -4,9 +4,33 @@ import cv2
 import numpy as np 
 import pprint
 
-import threading
 import sys
 import time
+
+DRONE_HEIGHT = -3
+DISTANCE_CLOSE = 10
+DISTANCE_FAR = 20
+
+class Direction:
+    def __init__(self, num):
+        if -0.12 <= num < 0.12:
+            self.direction = 'north'
+        elif 0.12 <= num < 0.55:
+            self.direction = 'northeast'
+        elif 0.55 <= num < 0.79:
+            self.direction = 'east'
+        elif 0.79 <= num <= 0.96:
+            self.direction = 'southeast'
+        elif 0.96 < num or -0.96 > num:
+            self.direction = 'south'
+        elif -0.55 <= num < -0.12:
+            self.direction = 'northwest'
+        elif -0.79 <= num < -0.55:
+            self.direction = 'west'
+        elif -0.96 <= num < -0.79:
+            self.direction = 'southwest'
+    def get_direction(self):
+        return self.direction
 
 def detection_filter_on_off(on_off,detect_filter_name=None,detect_radius_cm=200):
     if on_off:
@@ -58,20 +82,25 @@ def navigate_to_monument(client:airsim.MultirotorClient,z: int):
                             yaw_mode=airsim.YawMode(False,0),
                             lookahead=10, adaptive_lookahead=1 )
 
-def move_away_from_monument(client:airsim.MultirotorClient,z: int, monument_object: airsim.DetectionInfo):
+def move_away_from_monument(client:airsim.MultirotorClient, z: int, monument_object: airsim.DetectionInfo, distance: int = DISTANCE_FAR):
     print("flying away from monument...")
-
-    job = client.moveToPositionAsync(110,150,z,2)
+    relative_position = monument_object.relative_pose.position
+    client_position = client.simGetVehiclePose().position
+    monument_position = client_position + relative_position
+    new_x = monument_position.x_val
+    new_y = monument_position.y_val-distance
+    job = client.moveToPositionAsync(   new_x, new_y, z, 2 )
     return job
 
-def move_forward_to_monument(client:airsim.MultirotorClient,z: int, monument_object: airsim.DetectionInfo):
+def move_forward_to_monument(client:airsim.MultirotorClient, z: int, monument_object: airsim.DetectionInfo, distance: int = DISTANCE_CLOSE):
     print("flying forward to monument...")
-
-    job = client.moveToPositionAsync(110,160,z,2)
+    relative_position = monument_object.relative_pose.position
+    client_position = client.simGetVehiclePose().position
+    monument_position = client_position + relative_position
+    new_x = monument_position.x_val
+    new_y = monument_position.y_val-distance
+    job = client.moveToPositionAsync(   new_x, new_y, z, 2 )
     return job
-
-MOVE_SCHEDULE_SECONDS = 12
-DRONE_HEIGHT = -3
 
 if __name__ == "__main__":
     
@@ -102,7 +131,6 @@ if __name__ == "__main__":
     job = client_takeoff(client=client,z=z)
     has_job = True
 
-    schedule_timestamp = time.time()
     while True:
 
         # Get the raw image frame
@@ -115,6 +143,11 @@ if __name__ == "__main__":
         position = client.simGetVehiclePose().position
         position_text = "Position: ({:.2f}, {:.2f}, {:.2f})".format(position.x_val, position.y_val, position.z_val)
         cv2.putText(png, position_text, (20, png.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
+        # draw orientation in the bottom left corner
+        orientation = client.simGetVehiclePose().orientation
+        # orientation_text = "Orientation: ({:.2f}, {:.2f}, {:.2f}) -> {}".format(orientation.x_val, orientation.y_val, orientation.z_val,Direction(orientation.z_val).direction)
+        orientation_text = "Orientation: {}".format(Direction(orientation.z_val).get_direction())
+        cv2.putText(png, orientation_text, (20, png.shape[0]-40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
 
         # Now run detect process
         detect_objects = client.simGetDetections(camera_name, image_type)
@@ -133,14 +166,13 @@ if __name__ == "__main__":
                     # draw distance text with color based on distance magnitude
                     relative_position_vector = detect_object.relative_pose.position
                     distance_tuple = (relative_position_vector.x_val,relative_position_vector.y_val,relative_position_vector.z_val)
-                    distance_text = "Distance: %.2f" % relative_position_vector.get_length()
+                    distance_text = "Distance: %.2f (vector=<%.2f,%.2f,%.2f>)" % (relative_position_vector.get_length(),relative_position_vector.x_val,relative_position_vector.y_val, relative_position_vector.z_val)
                     color = get_distance_color(distance_tuple,scale=20.0)
-                    cv2.putText(png, distance_text, (int(detect_object.box2D.min.x_val),int(detect_object.box2D.max.y_val + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, thickness=2)
+                    # cv2.putText(png, distance_text, (int(detect_object.box2D.min.x_val),int(detect_object.box2D.max.y_val + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, thickness=2)
+                    cv2.putText(png, distance_text, (int(detect_object.box2D.min.x_val),int(detect_object.box2D.max.y_val + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), thickness=2)
 
         # Check for time to schedule a flight path
-        if not(has_job) and (run_schedule) and ( (time.time()-schedule_timestamp) > MOVE_SCHEDULE_SECONDS ):
-            # Update timestamp
-            schedule_timestamp = time.time()
+        if not(has_job) and (run_schedule):
             position = client.simGetVehiclePose().position
 
             # Need to schedule a flight forward 
