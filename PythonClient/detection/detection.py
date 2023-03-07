@@ -84,21 +84,43 @@ def navigate_to_monument(client:airsim.MultirotorClient,z: int):
 
 def move_away_from_monument(client:airsim.MultirotorClient, z: int, monument_object: airsim.DetectionInfo, distance: int = DISTANCE_FAR):
     print("flying away from monument...")
+    # Get the relative and current position of drone
     relative_position = monument_object.relative_pose.position
     client_position = client.simGetVehiclePose().position
+    direction = Direction(orientation.z_val).get_direction()
     monument_position = client_position + relative_position
-    new_x = monument_position.x_val
-    new_y = monument_position.y_val-distance
+
+    # Now check facing of drone, update position accordingly
+    # if east or west, offset y
+    if (direction=='east') or (direction=='west'):
+        new_x = monument_position.x_val
+        new_y = monument_position.y_val-distance
+    # if north or south, offset x
+    if (direction=='north') or (direction=='south'):
+        new_x = monument_position.x_val-distance
+        new_y = monument_position.y_val
+
     job = client.moveToPositionAsync(   new_x, new_y, z, 2 )
     return job
 
 def move_forward_to_monument(client:airsim.MultirotorClient, z: int, monument_object: airsim.DetectionInfo, distance: int = DISTANCE_CLOSE):
     print("flying forward to monument...")
+    # Get the relative and current position of drone
     relative_position = monument_object.relative_pose.position
     client_position = client.simGetVehiclePose().position
+    direction = Direction(orientation.z_val).get_direction()
     monument_position = client_position + relative_position
-    new_x = monument_position.x_val
-    new_y = monument_position.y_val-distance
+
+    # Now check facing of drone, update position accordingly
+    # if east or west, offset y
+    if (direction=='east') or (direction=='west'):
+        new_x = monument_position.x_val
+        new_y = monument_position.y_val-distance
+    # if north or south, offset x
+    if (direction=='north') or (direction=='south'):
+        new_x = monument_position.x_val-distance
+        new_y = monument_position.y_val
+
     job = client.moveToPositionAsync(   new_x, new_y, z, 2 )
     return job
 
