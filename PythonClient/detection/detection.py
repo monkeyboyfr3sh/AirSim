@@ -3,6 +3,8 @@ import airsim
 import cv2
 import numpy as np 
 import pprint
+import msgpackrpc
+import future
 
 import sys
 import time
@@ -68,6 +70,12 @@ def client_takeoff(client:airsim.MultirotorClient,z: int):
     print("make sure we are hovering at {} meters...".format(-z))
     return client.moveToZAsync(z, 1)
 
+def client_disarm(client:airsim.MultirotorClient):
+    job = client.moveToZAsync(0, 1)
+    job.join()
+    client.enableApiControl(False)
+    return job
+
 def navigate_to_monument(client:airsim.MultirotorClient,z: int):
     # Schedule the flight path
     print("flying to monument...")
@@ -105,24 +113,65 @@ def move_away_from_monument(client:airsim.MultirotorClient, z: int, monument_obj
 
 def move_forward_to_monument(client:airsim.MultirotorClient, z: int, monument_object: airsim.DetectionInfo, distance: int = DISTANCE_CLOSE):
     print("flying forward to monument...")
-    # Get the relative and current position of drone
-    relative_position = monument_object.relative_pose.position
-    client_position = client.simGetVehiclePose().position
-    direction = Direction(orientation.z_val).get_direction()
-    monument_position = client_position + relative_position
+    
+    rotate_job = client.rotateByYawRateAsync(20,3.0)
+    while(rotate_job.result==None):
+        yaw = airsim.to_eularian_angles(
+            monument_object.relative_pose.orientation
+        )
+        print(yaw,end="\r")
+    # direction = Direction(orientation.z_val).get_direction()
+    # monument_position = client_position + relative_position
 
-    # Now check facing of drone, update position accordingly
-    # if east or west, offset y
-    if (direction=='east') or (direction=='west'):
-        new_x = monument_position.x_val
-        new_y = monument_position.y_val-distance
-    # if north or south, offset x
-    if (direction=='north') or (direction=='south'):
-        new_x = monument_position.x_val-distance
-        new_y = monument_position.y_val
+    # # Now check facing of drone, update position accordingly
+    # # if east or west, offset y
+    # if (direction=='east') or (direction=='west'):
+    #     new_x = monument_position.x_val
+    #     new_y = monument_position.y_val-distance
+    # # if north or south, offset x
+    # if (direction=='north') or (direction=='south'):
+    #     new_x = monument_position.x_val-distance
+    #     new_y = monument_position.y_val
 
-    job = client.moveToPositionAsync(   new_x, new_y, z, 2 )
-    return job
+    # job = client.moveToPositionAsync(   new_x, new_y, z, 2 )
+    # return job
+
+def draw_HUD(png,client:airsim.MultirotorClient):
+    
+    # draw position in the bottom left corner
+    position = client.simGetVehiclePose().position
+    position_text = "Position: ({:.2f}, {:.2f}, {:.2f})".format(position.x_val, position.y_val, position.z_val)
+    cv2.putText(png, position_text, (20, png.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
+    
+    # draw orientation in the bottom left corner (Converted to direction)
+    orientation = client.simGetVehiclePose().orientation
+    # orientation_text = "Orientation: ({:.2f}, {:.2f}, {:.2f}) -> {}".format(orientation.x_val, orientation.y_val, orientation.z_val,Direction(orientation.z_val).direction)
+    orientation_text = "Orientation: {}".format(Direction(orientation.z_val).get_direction())
+    cv2.putText(png, orientation_text, (20, png.shape[0]-40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
+
+def get_detected_object(client:airsim.MultirotorClient, camera_name, image_type, detect_name) -> airsim.DetectionInfo:
+    detect_objects = client.simGetDetections(camera_name, image_type)
+    if detect_objects:
+        for detect_object in detect_objects:
+            if detect_object.name == detect_name:
+                return detect_object
+    return None
+
+def draw_object_detection(png, detect_object: airsim.DetectionInfo):
+    # draw bounding box
+    cv2.rectangle(png,(int(detect_object.box2D.min.x_val),int(detect_object.box2D.min.y_val)),(int(detect_object.box2D.max.x_val),int(detect_object.box2D.max.y_val)),(255,0,0),2)
+    
+    # draw detect_object name
+    cv2.putText(png, detect_object.name, (int(detect_object.box2D.min.x_val),int(detect_object.box2D.min.y_val - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (36,255,12), thickness=2)
+    
+    # draw distance text with color based on distance magnitude
+    relative_position_vector = detect_object.relative_pose.position
+    distance_tuple = (relative_position_vector.x_val,relative_position_vector.y_val,relative_position_vector.z_val)
+    distance_text = "Distance: %.2f (vector=<%.2f,%.2f,%.2f>)" % (relative_position_vector.get_length(),relative_position_vector.x_val,relative_position_vector.y_val, relative_position_vector.z_val)
+    color = get_distance_color(distance_tuple,scale=20.0)
+    # cv2.putText(png, distance_text, (int(detect_object.box2D.min.x_val),int(detect_object.box2D.max.y_val + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, thickness=2)
+    cv2.putText(png, distance_text, (int(detect_object.box2D.min.x_val/2),int(detect_object.box2D.max.y_val + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), thickness=2)
+    return png
 
 if __name__ == "__main__":
     
@@ -139,18 +188,14 @@ if __name__ == "__main__":
     # Turn on detection
     detection_filter_on_off(True, detect_filter_name)
 
-    print("arming the drone...")
-    client.armDisarm(True)
-
     #init vars
     z = DRONE_HEIGHT
     has_job = False
     job = None
-    away_toward_monument = False
-    run_schedule = False
     monument_object = None
 
-    job = client_takeoff(client=client,z=z)
+    # client.armDisarm(True)
+    job = client_disarm(client=client)
     has_job = True
 
     while True:
@@ -161,52 +206,14 @@ if __name__ == "__main__":
             continue
         # Decode raw image 
         png = cv2.imdecode(airsim.string_to_uint8_array(rawImage), cv2.IMREAD_UNCHANGED)
-        # draw position in the bottom left corner
-        position = client.simGetVehiclePose().position
-        position_text = "Position: ({:.2f}, {:.2f}, {:.2f})".format(position.x_val, position.y_val, position.z_val)
-        cv2.putText(png, position_text, (20, png.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
-        # draw orientation in the bottom left corner
-        orientation = client.simGetVehiclePose().orientation
-        # orientation_text = "Orientation: ({:.2f}, {:.2f}, {:.2f}) -> {}".format(orientation.x_val, orientation.y_val, orientation.z_val,Direction(orientation.z_val).direction)
-        orientation_text = "Orientation: {}".format(Direction(orientation.z_val).get_direction())
-        cv2.putText(png, orientation_text, (20, png.shape[0]-40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
+
+        # Draw HUD
+        draw_HUD(png,client)
 
         # Now run detect process
-        detect_objects = client.simGetDetections(camera_name, image_type)
-        if detect_objects:
-            for detect_object in detect_objects:
-                if detect_object.name == "Monument_01_176":
-                    # Grab a copy of monument object
-                    monument_object = detect_object
-
-                    # draw bounding box
-                    cv2.rectangle(png,(int(detect_object.box2D.min.x_val),int(detect_object.box2D.min.y_val)),(int(detect_object.box2D.max.x_val),int(detect_object.box2D.max.y_val)),(255,0,0),2)
-                    
-                    # draw detect_object name
-                    cv2.putText(png, detect_object.name, (int(detect_object.box2D.min.x_val),int(detect_object.box2D.min.y_val - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (36,255,12), thickness=2)
-                    
-                    # draw distance text with color based on distance magnitude
-                    relative_position_vector = detect_object.relative_pose.position
-                    distance_tuple = (relative_position_vector.x_val,relative_position_vector.y_val,relative_position_vector.z_val)
-                    distance_text = "Distance: %.2f (vector=<%.2f,%.2f,%.2f>)" % (relative_position_vector.get_length(),relative_position_vector.x_val,relative_position_vector.y_val, relative_position_vector.z_val)
-                    color = get_distance_color(distance_tuple,scale=20.0)
-                    # cv2.putText(png, distance_text, (int(detect_object.box2D.min.x_val),int(detect_object.box2D.max.y_val + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, thickness=2)
-                    cv2.putText(png, distance_text, (int(detect_object.box2D.min.x_val),int(detect_object.box2D.max.y_val + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), thickness=2)
-
-        # Check for time to schedule a flight path
-        if not(has_job) and (run_schedule):
-            position = client.simGetVehiclePose().position
-
-            # Need to schedule a flight forward 
-            if(away_toward_monument):
-                job = move_away_from_monument(client=client,z=z,monument_object=monument_object)
-                has_job = True
-                away_toward_monument = False
-            # Need to schedule a flight backward
-            else:
-                job = move_forward_to_monument(client=client,z=z,monument_object=monument_object)
-                has_job = True
-                away_toward_monument = True
+        monument_object = get_detected_object(client,camera_name,image_type,"Monument_01_176")
+        if(monument_object!=None):
+            draw_object_detection(png,monument_object)
 
         # Has a job that has just finished
         if (has_job and job.result!=None):
@@ -232,6 +239,10 @@ if __name__ == "__main__":
         elif key & 0xFF == ord('n'):
             job = navigate_to_monument(client=client,z=z)
             has_job = True
+        elif key & 0xFF == ord('y'):
+            move_forward_to_monument(client=client,z=z,monument_object=monument_object)
+            # job = move_forward_to_monument(client=client,z=z,monument_object=monument_object)
+            # has_job = True
         elif key & 0xFF == ord('s'):
             run_schedule = not(run_schedule)
             if(run_schedule):
