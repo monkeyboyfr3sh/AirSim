@@ -9,8 +9,6 @@ import time
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from skspatial.objects import Sphere
-import time
-
 import threading
 
 from tasks.rc import run_rc_path

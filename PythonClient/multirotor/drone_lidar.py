@@ -36,10 +36,10 @@ class LidarTest:
         state = self.client.getMultirotorState()
         #print("state: %s" % pprint.pformat(state))
 
-        airsim.wait_key('Press any key to move vehicle to (-10, 10, -10) at 5 m/s')
-        self.client.moveToPositionAsync(-10, 10, -10, 5).join()
+        # airsim.wait_key('Press any key to move vehicle to (-10, 10, -10) at 5 m/s')
+        # self.client.moveToPositionAsync(-10, 10, -10, 5).join()
 
-        self.client.hoverAsync().join()
+        # self.client.hoverAsync().join()
 
         airsim.wait_key('Press any key to get Lidar readings')
         
