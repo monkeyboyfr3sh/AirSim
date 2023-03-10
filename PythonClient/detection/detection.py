@@ -206,8 +206,6 @@ if __name__ == "__main__":
             has_job = True
         elif key & 0xFF == ord('y'):
             move_forward_to_monument(client=client,z=z,monument_name=TARGET_NAME)
-            # job = move_forward_to_monument(client=client,z=z,monument_object=monument_object)
-            # has_job = True
         elif key & 0xFF == ord('s'):
             run_schedule = not(run_schedule)
         elif key & 0xFF == ord('v'):
