@@ -57,14 +57,20 @@ def get_detected_object(client:airsim.MultirotorClient, detect_name, camera_name
     return None
 
 def draw_object_detection(png, detect_object: airsim.DetectionInfo):
+    
+    # Get info about the object in frame position
     object_xmin, object_xmax = int(detect_object.box2D.min.x_val), int(detect_object.box2D.max.x_val)
     object_ymin, object_ymax = int(detect_object.box2D.min.y_val), int(detect_object.box2D.max.y_val)
-    center_x = int((object_xmin + object_xmax) / 2)
     
+    # Now get center for frame and object
+    frame_center_x = int(png.shape[1] / 2)
+    object_center_x = int((object_xmin + object_xmax) / 2)
+    distance_from_center = abs(object_center_x - frame_center_x)
+
     # draw bounding box
     cv2.rectangle(png,(object_xmin,object_ymin),(object_xmax,object_ymax),(255,0,0),2)
     # draw vertical line at the center of the bounding box
-    cv2.line(png, (center_x, object_ymin), (center_x, object_ymax), (0, 255, 0), thickness=2)
+    cv2.line(png, (object_center_x, object_ymin), (object_center_x, object_ymax), (0, 255, 0), thickness=2)
 
     # draw detect_object name
     cv2.putText(png, detect_object.name, (int(detect_object.box2D.min.x_val),int(detect_object.box2D.min.y_val - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (36,255,12), thickness=2)
@@ -74,14 +80,16 @@ def draw_object_detection(png, detect_object: airsim.DetectionInfo):
     distance_text = "Distance: %.2f" % (relative_position_vector.get_length())
     cv2.putText(png, distance_text, (object_xmin, (object_ymax + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), thickness=2)
 
+    # draw offcenterness of the object
+    offcenter_text = "Offcenter: %.2f" % (distance_from_center)
+    cv2.putText(png, offcenter_text, (object_xmin, (object_ymax + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), thickness=2)
+
     return png
 
-
-
-def detection_filter_on_off(client:airsim.MultirotorClient, on_off,detect_filter_name=None,detect_radius_cm=200,  camera_name = "0", image_type = airsim.ImageType.Scene):
+def detection_filter_on_off(client:airsim.MultirotorClient, on_off,detect_filter_name=None,detect_radius_m=50,  camera_name = "0", image_type = airsim.ImageType.Scene):
     if on_off:
         # add desired object name to detect in wild card/regex format
-        client.simSetDetectionFilterRadius(camera_name, image_type, detect_radius_cm * 100)
+        client.simSetDetectionFilterRadius(camera_name, image_type, detect_radius_m * 100)
         client.simAddDetectionFilterMeshName(camera_name, image_type, detect_filter_name) 
     else :
         client.simClearDetectionMeshNames(camera_name, image_type)

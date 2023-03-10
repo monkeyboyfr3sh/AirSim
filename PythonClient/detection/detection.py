@@ -55,22 +55,30 @@ def navigate_to_monument(client:airsim.MultirotorClient,z: int):
                             yaw_mode=airsim.YawMode(False,0),
                             lookahead=10, adaptive_lookahead=1 )
 
-def center_on_detection(client:airsim.MultirotorClient, detect_name, yaw_rate=20,yaw_thresh=0.05,time_unit=1):
+def center_on_detection(client:airsim.MultirotorClient, detect_name, yaw_rate=10,center_thresh=10,time_unit=0.1):
     # Stay in loop while object is not centered    
     while( True ):  
 
         # Check if object is detect in frame
         detect_object = get_detected_object(client,detect_name)
         if(detect_object!=None):
+            
+            # Get info about the object in frame position
+            object_xmin, object_xmax = int(detect_object.box2D.min.x_val), int(detect_object.box2D.max.x_val)
+            object_ymin, object_ymax = int(detect_object.box2D.min.y_val), int(detect_object.box2D.max.y_val)
+            
+            # Now get center for frame and object
+            frame_center_x = int(png.shape[1] / 2)
+            object_center_x = int((object_xmin + object_xmax) / 2)
+            distance_from_center = object_center_x - frame_center_x
 
-            # Get the current offset yaw, break if it is smaller than thresh
-            yaw_delta = airsim.to_eularian_angles( detect_object.relative_pose.orientation )[2]
-            print(f"Current yaw = {yaw_delta}",end='\r')
-            if( abs(yaw_delta) < yaw_thresh ):
+            # Get the current center offset
+            print(f"Distance from center = {distance_from_center}",end='\r')
+            if( abs(distance_from_center) < center_thresh ):
                 break
 
             # Need to rotate with positive yaw
-            if(yaw_delta < 0):
+            if(distance_from_center > 0):
                 client.rotateByYawRateAsync(yaw_rate,time_unit).join()
             # Need to rotate with negative yaw
             else:
@@ -80,27 +88,22 @@ def center_on_detection(client:airsim.MultirotorClient, detect_name, yaw_rate=20
         # FIXME: should probably have timeout or something
         else:
             client.rotateByYawRateAsync(yaw_rate,time_unit).join()
+    
+    detect_object = get_detected_object(client,detect_name)
+    # Now get center for frame and object
+    frame_center_x = int(png.shape[1] / 2)
+    object_center_x = int((object_xmin + object_xmax) / 2)
+    distance_from_center = object_center_x - frame_center_x
+    
+    # Make sure client is hovering at the end 
+    client.hoverAsync().join()
 
-    print(f"\nfinal yaw = {yaw_delta}")
+    print(f"\nfinal offset = {distance_from_center}")
 
 def move_forward_to_monument(client:airsim.MultirotorClient, z: int, monument_object: airsim.DetectionInfo, distance: int = DISTANCE_CLOSE):
     print("flying forward to monument...")
 
     center_on_detection(client,monument_object.name)
-
-    rotate_job = client.rotateByYawRateAsync(20,1.0)
-    while (rotate_job.result==None):
-        orientation = client.simGetVehiclePose().orientation
-        client_yaw = orientation.z_val
-        print(f"Client yaw: {round(client_yaw,2)} ",end=' ')
-
-        monument_object = get_detected_object(client,"Monument_01_176")
-        if(monument_object!=None):
-            draw_object_detection(png,monument_object)
-            monument_yaw = airsim.to_eularian_angles( monument_object.relative_pose.orientation )[2]
-            print(f"Monument yaw: {round(monument_yaw,2)}",end='')
-        
-        print('\r')
 
 if __name__ == "__main__":
     
@@ -127,14 +130,14 @@ if __name__ == "__main__":
         monument_object = get_detected_object(client,"Monument_01_176")
         if(monument_object!=None):
             draw_object_detection(png,monument_object)
+        
+        # Draw HUD
+        draw_HUD(png,client)
 
         # Has a job that has just finished
         if (has_job and job.result!=None):
             print(f"job finised with result: {job.result}")
             has_job = False
-        
-        # Draw HUD
-        draw_HUD(png,client)
 
         # Show image and take in user input
         cv2.imshow("AirSim", png)
