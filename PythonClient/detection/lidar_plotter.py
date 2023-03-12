@@ -79,6 +79,9 @@ class lidar_plotter():
             length = abs(x_max-x_min)*1.2
             width = abs(y_max-y_min)*1.2
             height = abs(z_max-z_min)*1.2
+            
+            object_distance = detect_object.relative_pose.position.get_length()
+            self.ax.text2D(0.5, 0.95, f"Distance: {object_distance:.2f}", transform=self.ax.transAxes)
 
             X, Y, Z = cuboid_data(center, (length, width, height))
             self.ax.plot_wireframe(X, Y, Z, color='b', rstride=1, cstride=1, alpha=1, edgecolor='red')
@@ -88,6 +91,9 @@ class lidar_plotter():
                 linewidths=0.5,c=self.z_list)
         self.ax.quiver(0, 0, client_height, 3, 0, 0,linewidth=5,color='red')
         
+        # Print the client height inside the figure
+        self.ax.text2D(0.00, 0.95, f"Client Height: {-client_height:.2f}", transform=self.ax.transAxes)
+
         # Update limits
         self.ax.axes.set_xlim3d(left=-AXIS_HARD_LIMIT, right=AXIS_HARD_LIMIT) 
         self.ax.axes.set_ylim3d(bottom=-AXIS_HARD_LIMIT, top=AXIS_HARD_LIMIT) 
