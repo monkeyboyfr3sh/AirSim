@@ -8,15 +8,15 @@ import numpy as np
 
 AXIS_HARD_LIMIT = 15
 
-def parse_lidarData(data, point_value_cap=15, ground_low=-0.5, ground_high=-0.2):
+def parse_lidarData(data, z_offset, point_value_cap=15, ground_low=-0.5, ground_high=-0.15):
 
     # reshape array of floats to array of [X,Y,Z]
     points = np.array(data.point_cloud, dtype=np.dtype('f4'))
     points = np.reshape(points, (int(points.shape[0]/3), 3))
     # block points beyond certain range for x,y 
     points = np.array([point for point in points if ( ( abs(point[0]) <= point_value_cap) and ( abs(point[1]) <= point_value_cap))])
-    # block points that are basically just the ground
-    points = np.array([point for point in points if not ( (ground_low <= -point[2]) and (-point[2] <= ground_high) )  ])
+    # # block points that are basically just the ground
+    # points = np.array([point for point in points if not ( (ground_low+z_offset <= -point[2]) and (-point[2] <= ground_high+z_offset) )  ])
     
     return points
 
@@ -38,12 +38,17 @@ def LidarRun():
     axis_reset_timestamp = time.time()
 
     while True:
+        # Get Lidar data
         lidarData = client.getLidarData()
-        points = parse_lidarData(lidarData)
-        x_list = points[:,0]
-        y_list = -points[:,1]
-        z_list = -points[:,2]
+        client_height = client.simGetVehiclePose().position.z_val
+        points = parse_lidarData(lidarData,client_height)
         
+        # Have something to update with
+        if(points.ndim==2):
+            x_list = points[:,0]
+            y_list = -points[:,1]
+            z_list = -points[:,2]
+
         # Want to reset axis limits
         if( time.time()-axis_reset_timestamp > 1):
             axis_reset_timestamp = time.time()
@@ -55,21 +60,26 @@ def LidarRun():
         # Update mins
         x_min, y_min, z_min = min(x_min, np.min(x_list)), min(y_min, np.min(y_list)), min(z_min, np.min(z_list))
 
-        # plot the data
-        ax.quiver(0, 0, -0.25, 3, 0, 0,linewidth=10)
-        ax.scatter( x_list, y_list, z_list,
-                linewidths=0.5,c='red')
+        # Before drawing data, clear old data
+        ax.clear()
 
-        # ax.axes.set_xlim3d(left=-5, right=AXIS_HARD_LIMIT) 
-        # ax.axes.set_ylim3d(bottom=-AXIS_HARD_LIMIT, top=AXIS_HARD_LIMIT) 
-        ax.axes.set_xlim3d(left=x_min, right=x_max) 
-        ax.axes.set_ylim3d(bottom=y_min, top=y_max) 
-        # ax.axes.set_zlim3d(bottom=-1, top=0) 
+        # plot the data
+        ax.scatter( x_list, y_list, z_list,
+                linewidths=0.5,c=z_list)
+        ax.quiver(0, 0, client_height, 3, 0, 0,linewidth=20,color='red')
+        
+        # Update limits
+        ax.axes.set_xlim3d(left=-AXIS_HARD_LIMIT, right=AXIS_HARD_LIMIT) 
+        ax.axes.set_ylim3d(bottom=-AXIS_HARD_LIMIT, top=AXIS_HARD_LIMIT) 
+        ax.axes.set_zlim3d(bottom=-5, top=10) 
+        # Set the labels
+        ax.axes.set_xlabel("x")
+        ax.axes.set_ylabel("y")
+        ax.axes.set_zlabel("z")
 
         # Update plot and pause
         plt.draw() 
         plt.pause(0.1)
-        ax.clear()
 
 if __name__ == "__main__":
     LidarRun()
