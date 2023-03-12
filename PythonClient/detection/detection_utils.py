@@ -3,9 +3,6 @@ import airsim
 import cv2
 import numpy as np
 
-DISTANCE_CLOSE = 10
-DISTANCE_FAR = 20
-
 class Direction:
     def __init__(self, num):
         if -0.12 <= num < 0.12:
@@ -103,7 +100,7 @@ def get_distance_color(distance_mag,scale = 50.0):
     green = max(min(255 * ((scale - distance_mag) /scale), 255), 0)
     return (0, int(green), int(red))
 
-def center_on_detection(client:airsim.MultirotorClient, detect_name, yaw_rate=10,center_thresh=10,time_unit=0.1):
+def center_on_detection(client:airsim.MultirotorClient, detect_name, base_yaw_rate=10,center_thresh=10,time_unit=0.1,max_spin_rate=40):
     detection_present = True
 
     # Stay in loop while object is not centered    
@@ -135,15 +132,21 @@ def center_on_detection(client:airsim.MultirotorClient, detect_name, yaw_rate=10
 
             # Need to rotate with positive yaw
             if(distance_from_center > 0):
-                client.rotateByYawRateAsync(yaw_rate,time_unit).join()
+                spin_rate = base_yaw_rate*1.0
+                spin_rate = min(spin_rate,max_spin_rate)
+                client.rotateByYawRateAsync(spin_rate,time_unit).join()
             # Need to rotate with negative yaw
             else:
-                client.rotateByYawRateAsync(-yaw_rate,time_unit).join()
+                spin_rate = base_yaw_rate*1.0
+                spin_rate = min(spin_rate,max_spin_rate)
+                client.rotateByYawRateAsync(-spin_rate,time_unit).join()
 
         # Just spin if no object detected
         else:
-            print(f"Searching for {detect_name}...",end='\r')
-            client.rotateByYawRateAsync(yaw_rate,time_unit).join()
+            spin_rate = base_yaw_rate*5.0
+            spin_rate = min(spin_rate,max_spin_rate)
+            print(f"Searching for {detect_name}... (spin_rate:{spin_rate})",end='\r')
+            client.rotateByYawRateAsync(spin_rate,time_unit).join()
             detection_present = False
     
     detect_object = get_detected_object(client,detect_name)
@@ -157,7 +160,7 @@ def center_on_detection(client:airsim.MultirotorClient, detect_name, yaw_rate=10
 
     print(f"\nfinal offset = {distance_from_center}")
 
-def move_to_distance_from_object(client:airsim.MultirotorClient, detect_name: str, z: int, distance_goal: int = DISTANCE_CLOSE, distance_thresh: int = 0.1, time_unit=0.1):
+def move_to_distance_from_object(client:airsim.MultirotorClient, detect_name: str, z: int, distance_goal: int, velocity: tuple = (1.0, 0.0, 0.0), distance_thresh: int = 0.1, time_unit=0.1):
     # Now move closer to object until distance is desired
     while( True ):  
 
@@ -178,10 +181,10 @@ def move_to_distance_from_object(client:airsim.MultirotorClient, detect_name: st
 
             # Need to move towards object
             if(object_distance > distance_goal):
-                client.moveByVelocityBodyFrameAsync(1.0, 0.0, 0.0, time_unit).join()
+                client.moveByVelocityBodyFrameAsync(velocity[0], velocity[1], velocity[2], time_unit).join()
             # Need to move away from object
             else:
-                client.moveByVelocityBodyFrameAsync(-1.0, 0.0, 0.0, time_unit).join()
+                client.moveByVelocityBodyFrameAsync(-velocity[0], velocity[1], velocity[2], time_unit).join()
 
     # Now hove at distance
     client.hoverAsync().join()
