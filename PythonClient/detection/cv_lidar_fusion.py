@@ -15,14 +15,14 @@ import threading
 from detection_utils import Direction, draw_HUD, draw_object_detection, get_detected_object, get_fpv_frame, detection_filter_on_off,\
                             move_to_distance_from_object, center_on_detection
 
-from lidar_plotter import lidar_plotter, parse_lidarData
+from lidar_plotter import lidar_plotter
 
 DRONE_HEIGHT = -3
 TARGET_NAME = "Monument_01_176"
 DISTANCE_CLOSE = 10
 DISTANCE_FAR = 20
 
-def client_takeoff(client:airsim.MultirotorClient,z: int):
+def client_takeoff(client:airsim.MultirotorClient,z: float):
     # Take API control
     print(f"Acquiring API control...",end=' ')
     client.enableApiControl(True)
@@ -46,7 +46,7 @@ def client_disarm(client:airsim.MultirotorClient):
     client.moveToZAsync(0, 1).join()
     client.enableApiControl(False)
 
-def navigate_to_monument(client:airsim.MultirotorClient,z: int, hover_duration: int = 5.0):
+def navigate_to_monument(client:airsim.MultirotorClient, z: float, hover_duration: float = 5.0):
     
     # Takeoff
     client_takeoff(client=client,z=z)
@@ -92,7 +92,7 @@ def navigate_to_monument(client:airsim.MultirotorClient,z: int, hover_duration: 
 
     print('Navigation complete!')
 
-def move_distance_from_monument(client:airsim.MultirotorClient, z: int, monument_name: str, distance: int , hover_duration: int):
+def move_distance_from_monument(client:airsim.MultirotorClient, z: float, monument_name: str, distance: float , hover_duration: float):
     print(f"Moving to be {distance}m wrt monument...")
 
     # Takeoff
@@ -161,9 +161,8 @@ if __name__ == "__main__":
             
         # Get Lidar data
         lidarData = client.getLidarData()
-        client_height = client.simGetVehiclePose().position.z_val
-        points = parse_lidarData(lidarData,client_height)
-        
+        points = lidar_plot.parse_lidarData(lidarData,point_value_cap=10)
+
         # Update the plot
         lidar_plot.update_plot(points,client,detect_list,pause_time=0.01)
 
@@ -187,11 +186,8 @@ if __name__ == "__main__":
             elif key & 0xFF == ord('n'):
                 task_thread, task_client = create_task_client(target=navigate_to_monument,args=(z,),start_task=False)
                 task_thread.start()
-            elif key & 0xFF == ord('y'):
-                task_thread, task_client = create_task_client(target=move_distance_from_monument,args=(z,TARGET_NAME, 10,5.0),start_task=False)
-                task_thread.start()
-            elif key & 0xFF == ord('j'):
-                task_thread, task_client = create_task_client(target=move_distance_from_monument,args=(z,TARGET_NAME, 10,5.0),start_task=False)
+            elif key & 0xFF == ord('m'):
+                task_thread, task_client = create_task_client(target=move_distance_from_monument,args=(z,TARGET_NAME, 5.0,5.0),start_task=False)
                 task_thread.start()
             elif key & 0xFF == ord('v'):
                 client.rotateByYawRateAsync(20,1).join()

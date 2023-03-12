@@ -160,7 +160,7 @@ def center_on_detection(client:airsim.MultirotorClient, detect_name, base_yaw_ra
 
     print(f"\nfinal offset = {distance_from_center}")
 
-def move_to_distance_from_object(client:airsim.MultirotorClient, detect_name: str, z: int, distance_goal: int, velocity: tuple = (1.0, 0.0, 0.0), distance_thresh: int = 0.1, time_unit=0.1):
+def move_to_distance_from_object(client:airsim.MultirotorClient, detect_name: str, z: int, distance_goal: float, velocity: tuple = (1.0, 0.0, 0.0), distance_thresh: float = 0.1, time_unit: float = 0.1):
     # Now move closer to object until distance is desired
     while( True ):  
 

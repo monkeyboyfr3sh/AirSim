@@ -9,20 +9,6 @@ import numpy as np
 
 from plot_utils import cuboid_data
 
-AXIS_HARD_LIMIT = 15
-
-def parse_lidarData(data, z_offset, point_value_cap=15, ground_low=-0.5, ground_high=-0.15):
-
-    # reshape array of floats to array of [X,Y,Z]
-    points = np.array(data.point_cloud, dtype=np.dtype('f4'))
-    points = np.reshape(points, (int(points.shape[0]/3), 3))
-    # block points beyond certain range for x,y 
-    points = np.array([point for point in points if ( ( abs(point[0]) <= point_value_cap) and ( abs(point[1]) <= point_value_cap))])
-    # # block points that are basically just the ground
-    # points = np.array([point for point in points if not ( (ground_low+z_offset <= -point[2]) and (-point[2] <= ground_high+z_offset) )  ])
-    
-    return points
-
 class lidar_plotter():
 
     def __init__(self) -> None:
@@ -71,7 +57,9 @@ class lidar_plotter():
         self.ax.clear()
 
         # Plot each detection object
+        detected_something = False
         for detect_object in detect_objects:
+            detected_something = True
             x_min, x_max = detect_object.box3D.min.x_val, detect_object.box3D.max.x_val
             y_min, y_max = -detect_object.box3D.min.y_val, -detect_object.box3D.max.y_val
             z_min, z_max = -detect_object.box3D.min.z_val, -detect_object.box3D.max.z_val
@@ -81,10 +69,12 @@ class lidar_plotter():
             height = abs(z_max-z_min)*1.2
             
             object_distance = detect_object.relative_pose.position.get_length()
-            self.ax.text2D(0.5, 0.95, f"Distance: {object_distance:.2f}", transform=self.ax.transAxes)
+            self.ax.text2D(0.45, 0.95, f"{detect_object.name}: {object_distance:.2f}m", transform=self.ax.transAxes)
 
             X, Y, Z = cuboid_data(center, (length, width, height))
             self.ax.plot_wireframe(X, Y, Z, color='b', rstride=1, cstride=1, alpha=1, edgecolor='red')
+        if not (detected_something):
+            self.ax.text2D(0.45, 0.95, f"No object detected...", transform=self.ax.transAxes)        
 
         # plot the data
         self.ax.scatter( self.x_list, self.y_list, self.z_list,
@@ -92,11 +82,11 @@ class lidar_plotter():
         self.ax.quiver(0, 0, client_height, 3, 0, 0,linewidth=5,color='red')
         
         # Print the client height inside the figure
-        self.ax.text2D(0.00, 0.95, f"Client Height: {-client_height:.2f}", transform=self.ax.transAxes)
+        self.ax.text2D(0.00, 0.95, f"Client Height: {-client_height:.2f}m", transform=self.ax.transAxes)
 
         # Update limits
-        self.ax.axes.set_xlim3d(left=-AXIS_HARD_LIMIT, right=AXIS_HARD_LIMIT) 
-        self.ax.axes.set_ylim3d(bottom=-AXIS_HARD_LIMIT, top=AXIS_HARD_LIMIT) 
+        self.ax.axes.set_xlim3d(left=-self.point_value_cap, right=self.point_value_cap) 
+        self.ax.axes.set_ylim3d(bottom=-self.point_value_cap, top=self.point_value_cap) 
         self.ax.axes.set_zlim3d(bottom=-5, top=10) 
         # Set the labels
         self.ax.axes.set_xlabel("x")
@@ -106,4 +96,15 @@ class lidar_plotter():
         # Update plot and pause
         plt.draw() 
         plt.pause(pause_time)
+
+    def parse_lidarData(self, data, point_value_cap=15, ground_low=-0.5, ground_high=-0.15):
+        self.point_value_cap = point_value_cap
+        # reshape array of floats to array of [X,Y,Z]
+        points = np.array(data.point_cloud, dtype=np.dtype('f4'))
+        points = np.reshape(points, (int(points.shape[0]/3), 3))
+        # block points beyond certain range for x,y 
+        points = np.array([point for point in points if ( ( abs(point[0]) <= point_value_cap) and ( abs(point[1]) <= point_value_cap))])
+        # # block points that are basically just the ground
+        # points = np.array([point for point in points if not ( (ground_low+z_offset <= -point[2]) and (-point[2] <= ground_high+z_offset) )  ])
         
+        return points
