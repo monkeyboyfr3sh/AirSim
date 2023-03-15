@@ -48,12 +48,19 @@ def draw_HUD(png,client:airsim.MultirotorClient):
     cv2.line(png, (center_x, center_y - 10), (center_x, center_y + 10), (0, 0, 255), thickness=2)
 
 
-def get_detected_object(client:airsim.MultirotorClient, detect_name, camera_name = "0", image_type = airsim.ImageType.Scene) -> airsim.DetectionInfo:
+def get_detected_object(client:airsim.MultirotorClient, detect_name = None, camera_name = "0", image_type = airsim.ImageType.Scene) -> airsim.DetectionInfo:
     detect_objects = client.simGetDetections(camera_name, image_type)
+    
+    # No filter name given, so return all
+    if(detect_name==None):
+        return detect_objects
+    
+    # Check if detect object matches name
     if detect_objects:
         for detect_object in detect_objects:
             if detect_object.name == detect_name:
-                return detect_object
+                return [detect_object]
+    # No matches
     return None
 
 def draw_object_detection(png, detect_object: airsim.DetectionInfo):
@@ -100,7 +107,7 @@ def get_distance_color(distance_mag,scale = 50.0):
     green = max(min(255 * ((scale - distance_mag) /scale), 255), 0)
     return (0, int(green), int(red))
 
-def center_on_detection(client:airsim.MultirotorClient, detect_name, base_yaw_rate=10,center_thresh=10,time_unit=0.1,max_spin_rate=40):
+def center_on_detection(client:airsim.MultirotorClient, detect_name, base_yaw_rate=10,center_thresh=10,time_unit=0.1,max_spin_rate=100):
     detection_present = True
 
     # Stay in loop while object is not centered    
@@ -110,6 +117,8 @@ def center_on_detection(client:airsim.MultirotorClient, detect_name, base_yaw_ra
         # Check if object is detect in frame
         detect_object = get_detected_object(client,detect_name)
         if(detect_object!=None):
+            # Get the 1st element
+            detect_object = detect_object[0]
 
             if not (detection_present):
                 detection_present = True
@@ -149,7 +158,6 @@ def center_on_detection(client:airsim.MultirotorClient, detect_name, base_yaw_ra
             client.rotateByYawRateAsync(spin_rate,time_unit).join()
             detection_present = False
     
-    detect_object = get_detected_object(client,detect_name)
     # Now get center for frame and object
     frame_center_x = int(png.shape[1] / 2)
     object_center_x = int((object_xmin + object_xmax) / 2)
@@ -167,6 +175,8 @@ def move_to_distance_from_object(client:airsim.MultirotorClient, detect_name: st
         # Check if object is detect in frame
         detect_object = get_detected_object(client,detect_name)
         if(detect_object!=None):
+            # Get the 1st element
+            detect_object = detect_object[0]
             
             # Get distance from object
             relative_position_vector = detect_object.relative_pose.position

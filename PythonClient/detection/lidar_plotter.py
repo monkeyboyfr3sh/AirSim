@@ -25,7 +25,7 @@ class lidar_plotter():
 
     def init_plot(self):
         # Create plots
-        self.fig = plt.figure(figsize=(10,10))
+        self.fig = plt.figure(figsize=(9,9))
         # self.fig = plt.figure()
         self.ax = self.fig.add_subplot(1,1,1, projection='3d')
         self.x_list = []
@@ -58,7 +58,7 @@ class lidar_plotter():
                 z_filter = -( client_height + lidar_offset ) 
                 
                 add_index_list_1 = points_filtered[:, 2] < z_filter
-                add_index_list_1 = [add_index_list_1[i] and decision(0.4) for i in range(len(add_index_list_1))] # keep 20% of the original points
+                add_index_list_1 = [add_index_list_1[i] and decision(0.6) for i in range(len(add_index_list_1))] # keep 20% of the original points
                 add_index_list_2 = points_filtered[:, 2] >= z_filter
                 add_index_list = add_index_list_1 + add_index_list_2
                 points_filtered = points_filtered[ add_index_list ]
@@ -67,7 +67,7 @@ class lidar_plotter():
                 self.x_list,self.y_list,self.z_list = points_filtered[:,0], points_filtered[:,1], points_filtered[:,2]
 
             # Want to reset axis limits
-            if( time.time()-self.axis_reset_timestamp > 1):
+            if( time.time()-self.axis_reset_timestamp > 5):
                 self.axis_reset_timestamp = time.time()
                 self.reset_min_max()
             
