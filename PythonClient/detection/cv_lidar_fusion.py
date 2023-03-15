@@ -70,7 +70,7 @@ if __name__ == "__main__":
         # Update the plot
         lidar_plot.update_plot(points,client,detect_list,pause_time=0.01)
 
-        # Draw HUDq
+        # Draw HUD
         draw_HUD(png,client)
 
         # Push image into queue
