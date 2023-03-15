@@ -161,7 +161,7 @@ if __name__ == "__main__":
             
         # Get Lidar data
         lidarData = client.getLidarData()
-        points = lidar_plot.parse_lidarData(lidarData,point_value_cap=10)
+        points = lidar_plot.parse_lidarData(lidarData,point_value_cap=15)
 
         # Update the plot
         lidar_plot.update_plot(points,client,detect_list,pause_time=0.01)
