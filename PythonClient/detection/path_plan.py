@@ -3,11 +3,11 @@ import argparse
 import time
 import numpy as np
 
-from utils import create_grid, a_star, path_prune, heuristic, pickup_goal, \
+from planning_utils import create_grid, a_star, path_prune, heuristic, pickup_goal, \
 collinear_points, path_simplify, convert_25d_3d, draw_path
 
 TARGET_ALTITUDE = 10
-SAFETY_DISTANCE = 2
+SAFETY_DISTANCE = 2 
 
 class MotionPlanning:
 

@@ -105,6 +105,43 @@ def move_distance_from_monument(client:airsim.MultirotorClient, z: float, monume
     client_disarm(client=client)
     print('Navigation complete!')
 
+def get_close_point(client:airsim.MultirotorClient, lidar_plot: lidar_plotter, close_threshold: float):
+    # Get Lidar data
+    lidarData = client.getLidarData()
+    points = lidar_plot.parse_lidarData(lidarData,point_value_cap=50)
+    # Get the mgnitude for each point
+    magnitudes = np.array([np.linalg.norm(point) for point in points])
+    # Now get the points that are too close
+    close_points = np.array(points[(magnitudes < close_threshold)])
+    # FIXME: This is probably terrible but idk what else to do rn
+    average_location = np.mean(close_points, axis=0)
+    return average_location
+
+def avoid_hover(client:airsim.MultirotorClient, z: float, close_threshold: float, hover_duration: float):
+    # print("Avoid hovering...")
+
+    # Planning to use lidar data, so create the lidar_plotter
+    lidar_plot = lidar_plotter(init_plot=False)
+
+    # Takeoff
+    # client_takeoff(client=client,z=z)
+    average_location = get_close_point(client=client,lidar_plot=lidar_plot,close_threshold=close_threshold)
+    print(average_location)
+
+def save_data(client:airsim.MultirotorClient):
+    print("Saving lidar data to a csv...",end=' ')
+
+    # Planning to use lidar data, so create the lidar_plotter
+    lidar_plot = lidar_plotter(init_plot=False)
+
+    # Read the lidar data
+    lidarData = client.getLidarData()
+    points = lidar_plot.parse_lidarData(lidarData,point_value_cap=100)
+    np.savetxt('lidar_plot.csv', points, delimiter=',')
+    
+    print("Complete!")
+
+
 def create_task_client(target,args=None,start_task=False) -> threading.Thread:
         # Create a client for the tasks to share
         task_client = airsim.MultirotorClient()
@@ -159,4 +196,10 @@ def viewer_task(z: float, png_queue: Queue):
                 task_thread.start()
             elif key & 0xFF == ord('m'):
                 task_thread, task_client = create_task_client(target=move_distance_from_monument,args=(z,TARGET_NAME, 10.0,5.0),start_task=False)
+                task_thread.start()
+            elif key & 0xFF == ord('h'):
+                task_thread, task_client = create_task_client(target=avoid_hover,args=(z, 5.0, 5.0),start_task=False)
+                task_thread.start()
+            elif key & 0xFF == ord('s'):
+                task_thread, task_client = create_task_client(target=save_data,start_task=False)
                 task_thread.start()

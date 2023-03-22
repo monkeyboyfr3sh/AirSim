@@ -43,6 +43,8 @@ if __name__ == "__main__":
     detection_filter_on_off(client, True, detect_filter)
     detect_filter = "Raccoon*"
     detection_filter_on_off(client, True, detect_filter)
+    # detect_filter = "InstancedFoliageAct*"
+    # detection_filter_on_off(client, True, detect_filter)
 
     # Create a thread to show the FPV feed
     png_queue = Queue()

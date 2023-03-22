@@ -16,16 +16,17 @@ def decision(probability):
 
 class lidar_plotter():
 
-    def __init__(self) -> None:
-
-        # Create plot to put data on
-        self.init_plot()
-        self.reset_min_max()
-        self.axis_reset_timestamp = time.time()
+    def __init__(self, init_plot = True) -> None:
+        
+        if(init_plot):
+            # Create plot to put data on
+            self.init_plot()
+            self.reset_min_max()
+            self.axis_reset_timestamp = time.time()
 
     def init_plot(self):
         # Create plots
-        self.fig = plt.figure(figsize=(9,9))
+        self.fig = plt.figure(figsize=(7,7))
         # self.fig = plt.figure()
         self.ax = self.fig.add_subplot(1,1,1, projection='3d')
         self.x_list = []
