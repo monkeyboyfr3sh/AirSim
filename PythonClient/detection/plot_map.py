@@ -5,49 +5,6 @@ import heapq
 
 from generate_valid_points import generate_valid_points
 
-def heuristic(current, goal):
-    return np.sqrt(np.sum((current - goal) ** 2))
-
-def astar(start, goal, data):
-    # Initialize the start node
-    start_node = (heuristic(start, goal), start, 0, None)
-    # Initialize the priority queue
-    queue = [start_node]
-    # Initialize the visited set
-    visited = set()
-
-    # Define the modified cost function
-    def cost(current, next):
-        return np.sqrt(np.sum((next - current) ** 2)) + abs(current[2] - next[2])
-
-    # While there are nodes to visit
-    while queue:
-        # Get the node with the lowest f-value
-        _, current, g, parent = heapq.heappop(queue)
-
-        # Check if the current node is the goal
-        if np.array_equal(current, goal):
-            path = []
-            while parent:
-                path.append(parent)
-                parent = parent[3]
-            return path[::-1]
-
-        # Add the current node to the visited set
-        visited.add(tuple(current))
-
-        # Generate the successors of the current node
-        for i in range(data.shape[0]):
-            successor = data[i, :]
-            if tuple(successor) not in visited:
-                new_g = g + cost(current, successor)
-                f = new_g + heuristic(successor, goal)
-                new_node = (f, successor, new_g, (current, successor))
-                heapq.heappush(queue, new_node)
-
-    # No path found
-    return None
-
 def plot_map():
     
     # Load obstacles and valid points in the graph
@@ -62,8 +19,6 @@ def plot_map():
     start_position = valid_points[random_start_index]
     stop_position = valid_points[random_stop_index]
     
-    path = astar(start_position,stop_position,valid_points)
-
     # Create a figure
     fig = plt.figure(figsize=(7,7))
     ax = fig.add_subplot(1,1,1, projection='3d')
