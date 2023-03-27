@@ -3,13 +3,13 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import heapq
 
-from generate_valid_points import generate_valid_points
+from generate_valid_points import generate_valid_points, load_lidar_obstacles, load_valid_points
 
 def plot_map():
     
     # Load obstacles and valid points in the graph
-    obstacles = np.genfromtxt('lidar_plot.csv', delimiter=',')
-    valid_points = np.genfromtxt('valid_points_plot.csv', delimiter=',')
+    obstacles = load_lidar_obstacles()
+    valid_points = load_valid_points()
     
     # Generate a random index in the range [0, len(points)-1]
     random_start_index = np.random.randint(len(valid_points))
@@ -19,6 +19,7 @@ def plot_map():
     start_position = valid_points[random_start_index]
     stop_position = valid_points[random_stop_index]
     
+
     # Create a figure
     fig = plt.figure(figsize=(7,7))
     ax = fig.add_subplot(1,1,1, projection='3d')

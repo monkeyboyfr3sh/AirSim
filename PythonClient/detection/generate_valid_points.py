@@ -31,5 +31,13 @@ def generate_valid_points(distance_threshold : int = 10):
     # Save the valid points
     np.savetxt('valid_points_plot.csv', valid_points, delimiter=',')
 
+def load_lidar_obstacles():
+    obstacles = np.genfromtxt('lidar_plot.csv', delimiter=',')
+    return obstacles
+
+def load_valid_points():
+    valid_points = np.genfromtxt('valid_points_plot.csv', delimiter=',')
+    return valid_points
+
 if __name__ == "__main__":
     generate_valid_points()
