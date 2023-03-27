@@ -26,8 +26,25 @@ def get_best_neighbor(goal_index, neighbors, valid_points):
     # Find the index of the neighbor with the smallest distance
     best_neighbor_index = np.argmin(distances)
 
-    # Return the best neighbor
-    return neighbors[best_neighbor_index]
+    # Return the index of the best neighbor in the valid_points array
+    return np.where(np.all(valid_points == neighbors[best_neighbor_index], axis=1))[0][0]
+
+def recursive_search(start_index, goal_index, valid_points, search_radius=10.0):
+    # Initialize the path with the starting point
+    path = [start_index]
+
+    # Loop until the goal is reached
+    while path[-1] != goal_index:
+        # Get the neighbors of the current point
+        neighbors = get_neighbors(path[-1], valid_points, search_radius=search_radius)
+
+        # Choose the best neighbor
+        best_neighbor_index = get_best_neighbor(goal_index, neighbors, valid_points)
+
+        # Add the best neighbor to the path
+        path.append(best_neighbor_index)
+
+    return path
 
 def do_path_planning():
     
@@ -47,27 +64,26 @@ def do_path_planning():
     stop_position = valid_points[random_stop_index]
 
     # Get the neighbors
-    neighbor_points = get_neighbors(random_start_index, valid_points)
-    best_neighbor = get_best_neighbor(random_stop_index, neighbor_points, valid_points)
-    neighbor_x_list,neighbor_y_list,neighbor_z_list = neighbor_points[:,0], neighbor_points[:,1], -neighbor_points[:,2]
+    path = recursive_search(random_start_index,random_stop_index,valid_points)
+    path_list = valid_points[path]
+    path_list_x, path_list_y, path_list_z = path_list[:,0], path_list[:,1], path_list[:,2],
 
     # Create a figure
     fig = plt.figure(figsize=(7,7))
     ax = fig.add_subplot(1,1,1, projection='3d')
 
-
     # # plot the obstacles 
     ax.scatter( obstacles_x_list, obstacles_y_list, obstacles_z_list,
-            linewidths=5,c='red')
+            linewidths=1,c='red')
     # ax.scatter( valid_x_list, valid_y_list, valid_z_list,
     #         linewidths=0.5,c=valid_z_list)
     
     ax.scatter( start_position[0], start_position[1], -start_position[2],
             linewidths=5,c='blue')
-    ax.scatter( neighbor_x_list, neighbor_y_list, neighbor_z_list,
-            linewidths=2,c='lime')
-    ax.scatter( best_neighbor[0], best_neighbor[1], best_neighbor[2],
-            linewidths=5,c='purple')
+    # ax.scatter( neighbor_x_list, neighbor_y_list, neighbor_z_list,
+    #         linewidths=2,c='lime')
+    ax.scatter( path_list_x, path_list_y, -path_list_z,
+            linewidths=2,c='purple')
     
     ax.scatter( stop_position[0], stop_position[1], -stop_position[2],
             linewidths=5,c='green')
