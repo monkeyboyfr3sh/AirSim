@@ -93,16 +93,10 @@ def do_path_planning():
     # # plot the obstacles 
     ax.scatter( obstacles_x_list, obstacles_y_list, obstacles_z_list,
             linewidths=1,c='red')
-    # ax.scatter( valid_x_list, valid_y_list, valid_z_list,
-    #         linewidths=0.5,c=valid_z_list)
-    
     ax.scatter( start_position[0], start_position[1], -start_position[2],
             linewidths=5,c='blue')
-    # ax.scatter( neighbor_x_list, neighbor_y_list, neighbor_z_list,
-    #         linewidths=2,c='lime')
     ax.scatter( path_list_x, path_list_y, -path_list_z,
             linewidths=2,c='purple')
-    
     ax.scatter( stop_position[0], stop_position[1], -stop_position[2],
             linewidths=5,c='green')
 
