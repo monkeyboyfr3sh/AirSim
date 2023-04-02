@@ -61,18 +61,6 @@ def do_path_planning():
         PLOT_Z_MIN, PLOT_Z_MAX
     )
 
-    # Load obstacles and valid points in the graph
-    obstacles = np.genfromtxt('lidar_plot.csv', delimiter=',')
-    
-    # Generate the points on the fly
-    valid_points = fast_generate_valid_points(obstacles,map)
-    # # Load previously generated points 
-    # valid_points = np.genfromtxt("fast_algo_valid_points.csv", delimiter=',')
-
-    # Update plotted values
-    obstacles_x_list,obstacles_y_list,obstacles_z_list = obstacles[:,0], obstacles[:,1], -obstacles[:,2]
-    valid_x_list,valid_y_list,valid_z_list = valid_points[:,0], valid_points[:,1], -valid_points[:,2]
-
     # Generate a random index in the range [0, len(points)-1]
     random_start_index = np.random.randint(len(valid_points))
     random_stop_index = np.random.randint(len(valid_points))
@@ -80,6 +68,14 @@ def do_path_planning():
     # Select the random point using the random index
     start_position = valid_points[random_start_index]
     stop_position = valid_points[random_stop_index]
+
+    # Load obstacles and valid points in the graph
+    obstacles = np.genfromtxt('lidar_plot.csv', delimiter=',')
+    
+    # Generate the points on the fly
+    valid_points = fast_generate_valid_points(obstacles,map)
+    # # Load previously generated points 
+    # valid_points = np.genfromtxt("fast_algo_valid_points.csv", delimiter=',')
 
     # Get the neighbors
     path = recursive_search(random_start_index,random_stop_index,valid_points)
@@ -89,6 +85,10 @@ def do_path_planning():
     # Create a figure
     fig = plt.figure(figsize=(7,7))
     ax = fig.add_subplot(1,1,1, projection='3d')
+
+    # Update plotted values
+    obstacles_x_list,obstacles_y_list,obstacles_z_list = obstacles[:,0], obstacles[:,1], -obstacles[:,2]
+    valid_x_list,valid_y_list,valid_z_list = valid_points[:,0], valid_points[:,1], -valid_points[:,2]
 
     # # plot the obstacles 
     ax.scatter( obstacles_x_list, obstacles_y_list, obstacles_z_list,
