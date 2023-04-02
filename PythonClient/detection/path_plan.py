@@ -3,8 +3,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from generate_valid_points import load_lidar_obstacles, load_valid_points
-
+from generate_valid_points import fast_generate_valid_points, MapDescription
 
 def get_neighbors(position_index, valid_points, search_radius=10.0):
     # Compute the Euclidean distances between all points in the array and the target point
@@ -47,10 +46,29 @@ def recursive_search(start_index, goal_index, valid_points, search_radius=10.0):
     return path
 
 def do_path_planning():
-    
+    PLOT_X_MIN = -90
+    PLOT_X_MAX = 90
+    PLOT_Y_MIN = -90
+    PLOT_Y_MAX = 90
+    PLOT_Z_MIN = -30
+    PLOT_Z_MAX = 5
+    DEFAULT_VALID_FILENAME = 'valid_points_plot.csv'
+    DEFAULT_OBSTACLE_FILENAME = 'lidar_plot.csv'
+
+    map = MapDescription(
+        PLOT_X_MIN, PLOT_X_MAX,
+        PLOT_Y_MIN, PLOT_Y_MAX,
+        PLOT_Z_MIN, PLOT_Z_MAX
+    )
+
     # Load obstacles and valid points in the graph
-    obstacles = load_lidar_obstacles()
-    valid_points = load_valid_points()
+    obstacles = np.genfromtxt('lidar_plot.csv', delimiter=',')
+    
+    # Generate the points on the fly
+    valid_points = fast_generate_valid_points(obstacles,map)
+    # # Load previously generated points 
+    # valid_points = np.genfromtxt("fast_algo_valid_points.csv", delimiter=',')
+
     # Update plotted values
     obstacles_x_list,obstacles_y_list,obstacles_z_list = obstacles[:,0], obstacles[:,1], -obstacles[:,2]
     valid_x_list,valid_y_list,valid_z_list = valid_points[:,0], valid_points[:,1], -valid_points[:,2]
