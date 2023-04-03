@@ -12,9 +12,8 @@ import sys
 import time
 import threading
 
-from detection_utils import Direction, draw_HUD, draw_object_detection, get_detected_object, get_fpv_frame, detection_filter_on_off,\
-                            move_to_distance_from_object, center_on_detection
 
+import detection_utils as dt_util
 from lidar_plotter import lidar_plotter
 
 from queue import Queue
@@ -30,19 +29,16 @@ if __name__ == "__main__":
     # Connect to the AirSim simulator
     client = airsim.MultirotorClient()
     client.confirmConnection()
-
-    # # Create a plotter for lidar data
-    # lidar_plot = lidar_plotter()
-
+    
     # Turn on detection
     detect_filter = "Monument*"
-    detection_filter_on_off(client, True, detect_filter)
+    dt_util.detection_filter_on_off(client, True, detect_filter)
     detect_filter = "Car*"
-    detection_filter_on_off(client, True, detect_filter)
+    dt_util.detection_filter_on_off(client, True, detect_filter)
     detect_filter = "Deer*"
-    detection_filter_on_off(client, True, detect_filter)
+    dt_util.detection_filter_on_off(client, True, detect_filter)
     detect_filter = "Raccoon*"
-    detection_filter_on_off(client, True, detect_filter)
+    dt_util.detection_filter_on_off(client, True, detect_filter)
     # detect_filter = "InstancedFoliageAct*"
     # detection_filter_on_off(client, True, detect_filter)
 
@@ -54,26 +50,19 @@ if __name__ == "__main__":
     while viewer_thread.is_alive():
 
         # Decode raw image 
-        png = get_fpv_frame(client=client)
-
+        png = dt_util.get_fpv_frame(client=client)
+ 
         # Now run detect process
-        detect_objects = get_detected_object(client)
+        detect_objects = dt_util.get_detected_object(client)
         if(detect_objects!=None):
             for object in detect_objects:
-                draw_object_detection(png,object)
+                dt_util.draw_object_detection(png,object)
             detect_list = detect_objects
         else:
             detect_list = []
-            
-        # # Get Lidar data
-        # lidarData = client.getLidarData()
-        # points = lidar_plot.parse_lidarData(lidarData,point_value_cap=20)
-
-        # # Update the plot
-        # lidar_plot.update_plot(points,client,detect_list,pause_time=0.01)
 
         # Draw HUD
-        draw_HUD(png,client)
+        dt_util.draw_HUD(png,client)
 
         # Push image into queue
         png_queue.put(png)

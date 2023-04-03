@@ -37,13 +37,14 @@ class lidar_plotter():
         self.points_filtered = []
         # For path planning
         path_map = MapDescription(
-            -20,    20,     2.0,  # X
-            -20,    20,     2.0,  # Y
-            -8,     8,      2.0   # Z
+            -100,    100,     1.0,  # X
+            -100,    100,     1.0,  # Y
+            -10,    10,     2.0   # Z
         )
         self.all_points = generate_all_points(path_map)
         self.path_plan_timestamp = 0
         self.path_ready = False
+        self.z_offset = 0
 
     def reset_min_max(self):
         self.x_max, self.y_max, self.z_max = 0,0,0
@@ -118,6 +119,7 @@ class lidar_plotter():
             # Get the neighbors
             path = recursive_search(closest_start_index,closest_stop_index,valid_points,search_radius=2.0)
             self.path_list = valid_points[path]
+            self.valid_points = valid_points
             self.path_ready = True
 
     def draw_path_plan(self):
@@ -143,13 +145,6 @@ class lidar_plotter():
 
         # Before drawing data, clear old data
         self.ax.clear()
-
-        # Do path planning and draw the path
-        if( (time.time()-self.path_plan_timestamp) > 1.0):
-            self.path_plan_timestamp = time.time()
-            self.path_plan(self.z_offset,(0,15,-6))
-        if (self.path_ready):
-            self.draw_path_plan()
 
         # Draw detection boxes
         self.draw_detection_boxes(detect_objects)

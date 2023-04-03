@@ -12,11 +12,8 @@ import sys
 import time
 import threading
 
-from detection_utils import Direction, draw_HUD, draw_object_detection, get_detected_object, get_fpv_frame, detection_filter_on_off,\
-                            move_to_distance_from_object, center_on_detection
-
+import detection_utils as dt_util
 from lidar_plotter import lidar_plotter
-
 from queue import Queue
 
 def client_takeoff(client:airsim.MultirotorClient,z: float):
@@ -97,10 +94,10 @@ def move_distance_from_monument(client:airsim.MultirotorClient, z: float, monume
     time.sleep(1)
 
     # First center the drone 
-    center_on_detection(client,monument_name)
-    move_to_distance_from_object(client,monument_name,z,distance, velocity = (2.5, 0.0, 0.0))
+    dt_util.center_on_detection(client,monument_name)
+    dt_util.move_to_distance_from_object(client,monument_name,z,distance, velocity = (2.5, 0.0, 0.0))
     # Center the drone 
-    center_on_detection(client,monument_name)
+    dt_util.center_on_detection(client,monument_name)
 
     client_disarm(client=client)
     print('Navigation complete!')
@@ -144,20 +141,35 @@ def save_data(client:airsim.MultirotorClient):
 def path_plan_to_target(client:airsim.MultirotorClient, target_name: str, lidar_offset=0.15):
     print("Running path planning...",end=' ')
 
-    # Create a plotter for lidar data
-    lidar_plot = lidar_plotter()
+    client.simPause(True)
 
-    # Get Lidar data
-    lidarData = client.getLidarData()
-    points = lidar_plot.parse_lidarData(lidarData,point_value_cap=20)
+    # Get XYZ of target
+    target_coord = dt_util.get_detect_coordinates(client, target_name)
 
-    # Update the plot
-    lidar_plot.update_plot(points,client,[],pause_time=0.01,do_pause=False)
-    # # Do path planning and draw the path
-    # lidar_plot.path_plan((0,15,-6))
-    # lidar_plot.draw_path_plan()
-    plt.show()
-    
+    # Only work if object to dete
+    if not(target_coord==None):
+        print(f"detected {target_name} at {target_coord}...",end=' ')
+
+        # Create a plotter for lidar data
+        lidar_plot = lidar_plotter()
+
+        # Get Lidar data
+        lidarData = client.getLidarData()
+        points = lidar_plot.parse_lidarData(lidarData,point_value_cap=100)
+
+        # Update the plot
+        lidar_plot.update_plot(points,client,[],do_pause=True)
+
+        # Do path planning and draw the path
+        lidar_plot.path_plan(lidar_plot.z_offset,target_coord)
+        lidar_plot.draw_path_plan()
+        plt.show()
+
+    else:
+        print(f"{target_name} not detected...",end=' ')
+
+    client.simPause(False)
+
     print("Complete!")
 
 
@@ -183,6 +195,7 @@ def create_task_client(target,args=None,start_task=False) -> threading.Thread:
 def viewer_task(z: float, png_queue: Queue):
 
     target_name = "Monument_01_176"
+    # target_name = "Car_35"
     defaukt_z = -6
     task_thread = threading.Thread()
 

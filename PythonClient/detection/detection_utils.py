@@ -107,6 +107,21 @@ def get_distance_color(distance_mag,scale = 50.0):
     green = max(min(255 * ((scale - distance_mag) /scale), 255), 0)
     return (0, int(green), int(red))
 
+def get_detect_coordinates(client:airsim.MultirotorClient, detect_name):
+
+    _ = get_fpv_frame(client=client)
+
+    # Check if object is detect in frame
+    detect_object = get_detected_object(client,detect_name)
+    if (detect_object==None):
+        return None
+    else:
+        detect_object = detect_object[0]
+        x_min, x_max = detect_object.box3D.min.x_val, detect_object.box3D.max.x_val
+        y_min, y_max = -detect_object.box3D.min.y_val, -detect_object.box3D.max.y_val
+        z_min, z_max = -detect_object.box3D.min.z_val, -detect_object.box3D.max.z_val
+        return ( (x_max+x_min)/2, (y_max+y_min)/2, (z_max+z_min)/2 )
+
 def center_on_detection(client:airsim.MultirotorClient, detect_name, base_yaw_rate=10,center_thresh=10,time_unit=0.1,max_spin_rate=100):
     detection_present = True
 
