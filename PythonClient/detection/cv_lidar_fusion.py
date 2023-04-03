@@ -21,7 +21,7 @@ from queue import Queue
 
 from simulation_tasks import viewer_task
 
-DRONE_HEIGHT = -3
+DRONE_HEIGHT = -6
 DISTANCE_CLOSE = 10
 DISTANCE_FAR = 20
 
@@ -31,8 +31,8 @@ if __name__ == "__main__":
     client = airsim.MultirotorClient()
     client.confirmConnection()
 
-    # Create a plotter for lidar data
-    lidar_plot = lidar_plotter()
+    # # Create a plotter for lidar data
+    # lidar_plot = lidar_plotter()
 
     # Turn on detection
     detect_filter = "Monument*"
@@ -65,12 +65,12 @@ if __name__ == "__main__":
         else:
             detect_list = []
             
-        # Get Lidar data
-        lidarData = client.getLidarData()
-        points = lidar_plot.parse_lidarData(lidarData,point_value_cap=50)
+        # # Get Lidar data
+        # lidarData = client.getLidarData()
+        # points = lidar_plot.parse_lidarData(lidarData,point_value_cap=20)
 
-        # Update the plot
-        lidar_plot.update_plot(points,client,detect_list,pause_time=0.01)
+        # # Update the plot
+        # lidar_plot.update_plot(points,client,detect_list,pause_time=0.01)
 
         # Draw HUD
         draw_HUD(png,client)

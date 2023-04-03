@@ -141,6 +141,25 @@ def save_data(client:airsim.MultirotorClient):
     
     print("Complete!")
 
+def path_plan_to_target(client:airsim.MultirotorClient, target_name: str, lidar_offset=0.15):
+    print("Running path planning...",end=' ')
+
+    # Create a plotter for lidar data
+    lidar_plot = lidar_plotter()
+
+    # Get Lidar data
+    lidarData = client.getLidarData()
+    points = lidar_plot.parse_lidarData(lidarData,point_value_cap=20)
+
+    # Update the plot
+    lidar_plot.update_plot(points,client,[],pause_time=0.01,do_pause=False)
+    # # Do path planning and draw the path
+    # lidar_plot.path_plan((0,15,-6))
+    # lidar_plot.draw_path_plan()
+    plt.show()
+    
+    print("Complete!")
+
 
 def create_task_client(target,args=None,start_task=False) -> threading.Thread:
         # Create a client for the tasks to share
@@ -163,21 +182,21 @@ def create_task_client(target,args=None,start_task=False) -> threading.Thread:
 
 def viewer_task(z: float, png_queue: Queue):
 
-    TARGET_NAME = "Monument_01_176"
-
-    # Disarm client
-    task_thread, task_client = create_task_client(target=client_disarm,start_task=False)
-    task_thread.start()
+    target_name = "Monument_01_176"
+    defaukt_z = -6
+    task_thread = threading.Thread()
 
     while (True):
+        
         # Check if the queue has a new image
         if( not (png_queue.empty()) ):
+
             # Get the picture from queue
             png = png_queue.get()
 
             # Show image and take in user input
             cv2.imshow("AirSim", png)
-
+        
         # Always poll the key stroke        
         key = cv2.waitKey(1)
         if key & 0xFF == ord('q'):
@@ -189,17 +208,20 @@ def viewer_task(z: float, png_queue: Queue):
                 task_thread, task_client = create_task_client(target=client_disarm,start_task=False)
                 task_thread.start()
             elif key & 0xFF == ord('t'):
-                task_thread, task_client = create_task_client(target=client_takeoff,args=(z,),start_task=False)
+                task_thread, task_client = create_task_client(target=client_takeoff,args=(defaukt_z,),start_task=False)
                 task_thread.start()
             elif key & 0xFF == ord('n'):
-                task_thread, task_client = create_task_client(target=navigate_to_monument,args=(z,),start_task=False)
+                task_thread, task_client = create_task_client(target=navigate_to_monument,args=(defaukt_z,),start_task=False)
                 task_thread.start()
             elif key & 0xFF == ord('m'):
-                task_thread, task_client = create_task_client(target=move_distance_from_monument,args=(z,TARGET_NAME, 10.0,5.0),start_task=False)
+                task_thread, task_client = create_task_client(target=move_distance_from_monument,args=(defaukt_z,target_name, 10.0,5.0),start_task=False)
                 task_thread.start()
             elif key & 0xFF == ord('h'):
-                task_thread, task_client = create_task_client(target=avoid_hover,args=(z, 5.0, 5.0),start_task=False)
+                task_thread, task_client = create_task_client(target=avoid_hover,args=(defaukt_z, 5.0, 5.0),start_task=False)
                 task_thread.start()
             elif key & 0xFF == ord('s'):
                 task_thread, task_client = create_task_client(target=save_data,start_task=False)
+                task_thread.start()
+            elif key & 0xFF == ord('p'):
+                task_thread, task_client = create_task_client(target=path_plan_to_target,args=(target_name,),start_task=False)
                 task_thread.start()
