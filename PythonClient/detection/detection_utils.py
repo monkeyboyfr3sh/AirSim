@@ -38,8 +38,12 @@ def draw_HUD(png,client:airsim.MultirotorClient):
 
     # draw orientation in the bottom left corner (Converted to direction)
     orientation = client.simGetVehiclePose().orientation
+    pitch, roll, yaw = airsim.utils.to_eularian_angles(orientation)
+    yaw = fix_yaw_range(yaw)
     orientation_text = "Orientation: {}".format(Direction(orientation.z_val).get_direction())
+    pitch_roll_yaw_text = f"Yaw: {round(yaw,2)}"
     cv2.putText(png, orientation_text, (20, png.shape[0]-40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
+    cv2.putText(png, pitch_roll_yaw_text, (20, png.shape[0]-60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
 
     # draw cross in the center of the frame
     center_x = int(png.shape[1] / 2)
@@ -93,7 +97,7 @@ def draw_object_detection(png, detect_object: airsim.DetectionInfo):
 
     return png
 
-def detection_filter_on_off(client:airsim.MultirotorClient, on_off,detect_filter_name=None,detect_radius_m=50,  camera_name = "0", image_type = airsim.ImageType.Scene):
+def detection_filter_on_off(client:airsim.MultirotorClient, on_off,detect_filter_name=None,detect_radius_m=100,  camera_name = "0", image_type = airsim.ImageType.Scene):
     if on_off:
         # add desired object name to detect in wild card/regex format
         client.simSetDetectionFilterRadius(camera_name, image_type, detect_radius_m * 100)
@@ -219,3 +223,55 @@ def move_to_distance_from_object(client:airsim.MultirotorClient, detect_name: st
     relative_position_vector = detect_object.relative_pose.position
     object_distance = relative_position_vector.get_length()
     print(f"\nfinal distance = {object_distance}")
+
+def fix_yaw_range(yaw_offset):
+    # Convert the yaw
+    yaw_offset = yaw_offset % (2*np.pi)
+    if yaw_offset < 0:
+        yaw_offset += 2*np.pi
+    return yaw_offset
+
+def rotate_point(x, y, z, angle_offset):
+    """Rotate a point (x,y) around the origin by angle_offset radians."""
+    rotation_matrix = np.array([[np.cos(angle_offset), -np.sin(angle_offset)],
+                                [np.sin(angle_offset), np.cos(angle_offset)]])
+    point = np.array([x, y])
+    new_point = rotation_matrix @ point
+    return new_point[0], new_point[1], z
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Circle
+
+    # Example usage
+    x = 1
+    y = 0
+    angle_offset = 4*np.pi/4
+
+    # Plot original point
+    plt.plot(x, y, 'bo', label='Original point')
+
+    # Rotate point
+    x_new, y_new = rotate_point(x, y, angle_offset)
+
+    # Plot rotated point
+    plt.plot(x_new, y_new, 'ro', label='Rotated point')
+
+    # Set x-axis and y-axis limits to 5
+    plt.xlim(-5, 5)
+    plt.ylim(-5, 5)
+    # Add dashed lines for x=0 and y=0
+    plt.axhline(0, linestyle='--', color='gray')
+    plt.axvline(0, linestyle='--', color='gray')
+    # Add unit circle at (0,0)
+    circle = Circle((0,0), radius=1, fill=False, linestyle='--', color='gray')
+    plt.gca().add_patch(circle)
+
+    # Add labels and legend
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.title('Rotation of point around origin')
+    plt.legend()
+
+    # Show plot
+    plt.show()

@@ -142,75 +142,80 @@ def save_data(client:airsim.MultirotorClient):
     print("Complete!")
 
 def path_plan_to_target(client:airsim.MultirotorClient, target_name: str, lidar_offset=0.15):
-    print("Running path planning...",end=' ')
-    client.simPause(False)
-    # Takeoff
-    # Take API control
-    client_position = client.simGetVehiclePose().position
-    print(f"Acquiring API control...",end=' ')
-    client.enableApiControl(True)
+    # print("Running path planning...",end=' ')
+    # client.simPause(False)
+    # # Takeoff
+    # # Take API control
+    # client_position = client.simGetVehiclePose().position
+    # print(f"Acquiring API control...",end=' ')
+    # client.enableApiControl(True)
     
-    # Takeoff
-    print(f"Taking off...",end=' ')
-    client.takeoffAsync().join()
+    # # Takeoff
+    # print(f"Taking off...",end=' ')
+    # client.takeoffAsync().join()
 
-    # AirSim uses NED coordinates so negative axis is up.
-    z=client_position.z_val
-    print(f"Making sure hover at: {-z} meters...",end=' ')
-    client.moveToZAsync(z, 1).join()
-    print(f"Takeoff complete!")
-    time.sleep(1)
+    # # AirSim uses NED coordinates so negative axis is up.
+    # z=client_position.z_val
+    # print(f"Making sure hover at: {-z} meters...",end=' ')
+    # client.moveToZAsync(z, 1).join()
+    # print(f"Takeoff complete!")
+    # time.sleep(1)
 
-    client.simPause(True)
+    # client.simPause(True)
 
-    # Get XYZ of target
-    target_coord = dt_util.get_detect_coordinates(client, target_name)
+    # # Get XYZ of target
+    # target_coord = dt_util.get_detect_coordinates(client, target_name)
 
-    # Only work if object to dete
-    if not(target_coord==None):
-        print(f"detected {target_name} at {target_coord}...",end=' ')
+    # # Only work if object to dete
+    # if not(target_coord==None):
+    #     print(f"detected {target_name} at {target_coord}...",end=' ')
 
-        # Create a plotter for lidar data
-        lidar_plot = LidarPlotter()
+    #     # Create a plotter for lidar data
+    #     lidar_plot = LidarPlotter()
 
-        # Get Lidar data
-        lidarData = client.getLidarData()
-        points = lidar_plot.parse_lidarData(lidarData,point_value_cap=100)
+    #     # Get Lidar data
+    #     lidarData = client.getLidarData()
+    #     points = lidar_plot.parse_lidarData(lidarData,point_value_cap=100)
 
-        # Update the plot
-        lidar_plot.update_plot(points,client,[],do_pause=True)
+    #     # Update the plot
+    #     lidar_plot.update_plot(points,client,[],do_pause=True)
 
-        # Do path planning and draw the path
-        relative_safe_flight_path = np.asarray(lidar_plot.path_plan(lidar_plot.z_offset,target_coord))
-        lidar_plot.draw_path_plan()
-        plt.show()
+    #     # Do path planning and draw the path
+    #     path_list = lidar_plot.path_plan(lidar_plot.z_offset,target_coord)
+    #     relative_safe_flight_path = np.asarray(path_list)
+    #     lidar_plot.draw_path_plan()
+    #     plt.show()
 
-        # Save or load the flight path
-        np.savetxt("flight_path.csv", relative_safe_flight_path, delimiter=',')
+    #     # Save or load the flight path
+    #     np.savetxt("flight_path.csv", relative_safe_flight_path, delimiter=',')
         relative_safe_flight_path = np.genfromtxt("flight_path.csv", delimiter=',')
 
-        client_position = client.simGetVehiclePose().position
-        absolute_safe_flight_path = [   airsim.Vector3r(path_point[0]+client_position.x_val,path_point[1]+client_position.y_val,path_point[2])
-                                        for path_point in relative_safe_flight_path ]
+        # Need to rotate each point around the origin by the yaw offset
+        yaw_offset = 4*np.pi/4
+        rotated_flight_path = [ dt_util.rotate_point(point[0], point[1], point[2], yaw_offset) for point in relative_safe_flight_path]
 
-        # Show to goal points in the sim enviroment
-        client.simPlotPoints(   points = absolute_safe_flight_path,
-                                color_rgba=[1.0, 0.0, 0.0, 1.0], size = 25, duration = 60.0, is_persistent = False)
-        # Now unpause and follow the path
-        client.simPause(False)
-        client.moveOnPathAsync(
-                                path=absolute_safe_flight_path,
-                                velocity=5, timeout_sec=120,
-                                drivetrain=airsim.DrivetrainType.ForwardOnly,
-                                yaw_mode=airsim.YawMode(False,0),
-                                lookahead=1, adaptive_lookahead=1 ).join()
+        # client_position = client.simGetVehiclePose().position
+        # absolute_safe_flight_path = [   airsim.Vector3r(path_point[0]+client_position.x_val,path_point[1]+client_position.y_val,path_point[2])
+        #                                 for path_point in relative_safe_flight_path ]
 
-    else:
-        print(f"{target_name} not detected...",end=' ')
-        client.simPause(False)
+        # # Show to goal points in the sim enviroment
+        # client.simPlotPoints(   points = absolute_safe_flight_path,
+        #                         color_rgba=[1.0, 0.0, 0.0, 1.0], size = 25, duration = 60.0, is_persistent = False)
+        # # Now unpause and follow the path
+        # client.simPause(False)
+        # client.moveOnPathAsync(
+        #                         path=absolute_safe_flight_path,
+        #                         velocity=5, timeout_sec=120,
+        #                         drivetrain=airsim.DrivetrainType.ForwardOnly,
+        #                         yaw_mode=airsim.YawMode(False,0),
+        #                         lookahead=1, adaptive_lookahead=1 ).join()
 
-    client.enableApiControl(False)
-    print("Complete!")
+    # else:
+    #     print(f"{target_name} not detected...",end=' ')
+    #     client.simPause(False)
+
+    # client.enableApiControl(False)
+    # print("Complete!")
 
 
 def create_task_client(target,args=None,start_task=False) -> threading.Thread:
@@ -236,7 +241,7 @@ def viewer_task(z: float, png_queue: Queue):
 
     target_name = "Monument_01_176"
     # target_name = "Car_35"
-    defaukt_z = -6
+    default_z = -6
     task_thread = threading.Thread()
 
     while (True):
@@ -252,6 +257,10 @@ def viewer_task(z: float, png_queue: Queue):
         
         # Always poll the key stroke        
         key = cv2.waitKey(1)
+        if(key!=-1):
+            print(f"Received key: {chr(key)}")
+
+        # Always give the option to break program
         if key & 0xFF == ord('q'):
             break
 
@@ -261,16 +270,16 @@ def viewer_task(z: float, png_queue: Queue):
                 task_thread, task_client = create_task_client(target=client_disarm,start_task=False)
                 task_thread.start()
             elif key & 0xFF == ord('t'):
-                task_thread, task_client = create_task_client(target=client_takeoff,args=(defaukt_z,),start_task=False)
+                task_thread, task_client = create_task_client(target=client_takeoff,args=(default_z,),start_task=False)
                 task_thread.start()
             elif key & 0xFF == ord('n'):
-                task_thread, task_client = create_task_client(target=navigate_to_monument,args=(defaukt_z,),start_task=False)
+                task_thread, task_client = create_task_client(target=navigate_to_monument,args=(default_z,),start_task=False)
                 task_thread.start()
             elif key & 0xFF == ord('m'):
-                task_thread, task_client = create_task_client(target=move_distance_from_monument,args=(defaukt_z,target_name, 10.0,5.0),start_task=False)
+                task_thread, task_client = create_task_client(target=move_distance_from_monument,args=(default_z,target_name, 10.0,5.0),start_task=False)
                 task_thread.start()
             elif key & 0xFF == ord('h'):
-                task_thread, task_client = create_task_client(target=avoid_hover,args=(defaukt_z, 5.0, 5.0),start_task=False)
+                task_thread, task_client = create_task_client(target=avoid_hover,args=(default_z, 5.0, 5.0),start_task=False)
                 task_thread.start()
             elif key & 0xFF == ord('s'):
                 task_thread, task_client = create_task_client(target=save_data,start_task=False)
@@ -278,3 +287,45 @@ def viewer_task(z: float, png_queue: Queue):
             elif key & 0xFF == ord('p'):
                 task_thread, task_client = create_task_client(target=path_plan_to_target,args=(target_name,),start_task=False)
                 task_thread.start()
+
+if __name__ == "__main__":
+    # relative_safe_flight_path = np.genfromtxt("flight_path.csv", delimiter=',')
+
+    # # Need to rotate each point around the origin by the yaw offset
+    # yaw_offset = 4*np.pi/4
+    # rotated_flight_path = [ dt_util.rotate_point(point[0], point[1], point[2], yaw_offset) for point in relative_safe_flight_path]
+    # Load flight path data from CSV file
+    relative_safe_flight_path = np.genfromtxt("flight_path.csv", delimiter=',')
+
+    # Need to rotate each point around the origin by the yaw offset
+    yaw_offset = np.pi/2
+
+    # Convert the yaw
+    yaw_offset = yaw_offset % (2*np.pi)
+    if yaw_offset < 0:
+        yaw_offset += 2*np.pi
+
+    rotated_flight_path = np.asarray([dt_util.rotate_point(point[0], point[1], point[2], yaw_offset) for point in relative_safe_flight_path])
+
+    # Plot original flight path
+    fig = plt.figure()
+    ax = fig.add_subplot(121, projection='3d')
+    ax.scatter(relative_safe_flight_path[:,0], relative_safe_flight_path[:,1], relative_safe_flight_path[:,2])
+    ax.set_title('Original Flight Path')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_xlim(-50, 50)
+    ax.set_ylim(-50, 50)
+
+    # Plot rotated flight path
+    ax = fig.add_subplot(122, projection='3d')
+    ax.scatter(rotated_flight_path[:,0], rotated_flight_path[:,1], rotated_flight_path[:,2])
+    ax.set_title('Rotated Flight Path')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_xlim(-50, 50)
+    ax.set_ylim(-50, 50)
+
+    plt.show()
