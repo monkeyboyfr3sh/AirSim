@@ -13,10 +13,16 @@ from plot_utils import cuboid_data
 from generate_valid_points import fast_generate_valid_points, generate_all_points, MapDescription
 from path_plan import recursive_search
 
+class PathInfo():
+    def __init__(self, path, start_position, stop_position) -> None:
+        self.path = path
+        self.start_position = start_position
+        self.stop_position = stop_position
+
 def decision(probability):
     return random.random() < probability
 
-class lidar_plotter():
+class LidarPlotter():
 
     def __init__(self, init_plot = True) -> None:
         
@@ -99,7 +105,7 @@ class lidar_plotter():
         obstacles = self.points_filtered
         # Generate the points on the fly
         valid_points = fast_generate_valid_points(obstacles,self.all_points,distance_threshold=5.0)
-
+        ret_path = None
         if not (valid_points.size==0):
 
             # Select the point closest to expected start location
@@ -118,11 +124,14 @@ class lidar_plotter():
 
             # Get the neighbors
             path = recursive_search(closest_start_index,closest_stop_index,valid_points,search_radius=2.0)
+            ret_path = valid_points[path]
             self.path_list = valid_points[path]
             self.valid_points = valid_points
             self.path_ready = True
 
-    def draw_path_plan(self):
+        return ret_path
+
+    def draw_path_plan(self, path = None):
         self.ax.scatter( self.start_position[0], self.start_position[1], -self.start_position[2],linewidths=5,c='blue')
         self.ax.scatter( self.path_list[:,0], self.path_list[:,1], -self.path_list[:,2], linewidths=2,c='red')
         self.ax.scatter( self.stop_position[0], self.stop_position[1], -self.stop_position[2], linewidths=5,c='green')

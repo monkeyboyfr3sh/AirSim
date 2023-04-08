@@ -14,7 +14,7 @@ import threading
 
 
 import detection_utils as dt_util
-from lidar_plotter import lidar_plotter
+from lidar_plotter import LidarPlotter
 
 from queue import Queue
 

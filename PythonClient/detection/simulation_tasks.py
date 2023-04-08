@@ -1,10 +1,13 @@
 import setup_path 
 import airsim
+from airsim import Vector3r, Quaternionr, Pose
+from airsim.utils import to_quaternion
 import cv2
 import numpy as np 
 
 import time
 import matplotlib.pyplot as plt
+
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
@@ -13,7 +16,7 @@ import time
 import threading
 
 import detection_utils as dt_util
-from lidar_plotter import lidar_plotter
+from lidar_plotter import LidarPlotter
 from queue import Queue
 
 def client_takeoff(client:airsim.MultirotorClient,z: float):
@@ -102,7 +105,7 @@ def move_distance_from_monument(client:airsim.MultirotorClient, z: float, monume
     client_disarm(client=client)
     print('Navigation complete!')
 
-def get_close_point(client:airsim.MultirotorClient, lidar_plot: lidar_plotter, close_threshold: float):
+def get_close_point(client:airsim.MultirotorClient, lidar_plot: LidarPlotter, close_threshold: float):
     # Get Lidar data
     lidarData = client.getLidarData()
     points = lidar_plot.parse_lidarData(lidarData,point_value_cap=50)
@@ -117,8 +120,8 @@ def get_close_point(client:airsim.MultirotorClient, lidar_plot: lidar_plotter, c
 def avoid_hover(client:airsim.MultirotorClient, z: float, close_threshold: float, hover_duration: float):
     # print("Avoid hovering...")
 
-    # Planning to use lidar data, so create the lidar_plotter
-    lidar_plot = lidar_plotter(init_plot=False)
+    # Planning to use lidar data, so create the LidarPlotter
+    lidar_plot = LidarPlotter(init_plot=False)
 
     # Takeoff
     # client_takeoff(client=client,z=z)
@@ -128,8 +131,8 @@ def avoid_hover(client:airsim.MultirotorClient, z: float, close_threshold: float
 def save_data(client:airsim.MultirotorClient):
     print("Saving lidar data to a csv...",end=' ')
 
-    # Planning to use lidar data, so create the lidar_plotter
-    lidar_plot = lidar_plotter(init_plot=False)
+    # Planning to use lidar data, so create the LidarPlotter
+    lidar_plot = LidarPlotter(init_plot=False)
 
     # Read the lidar data
     lidarData = client.getLidarData()
@@ -140,6 +143,23 @@ def save_data(client:airsim.MultirotorClient):
 
 def path_plan_to_target(client:airsim.MultirotorClient, target_name: str, lidar_offset=0.15):
     print("Running path planning...",end=' ')
+    client.simPause(False)
+    # Takeoff
+    # Take API control
+    client_position = client.simGetVehiclePose().position
+    print(f"Acquiring API control...",end=' ')
+    client.enableApiControl(True)
+    
+    # Takeoff
+    print(f"Taking off...",end=' ')
+    client.takeoffAsync().join()
+
+    # AirSim uses NED coordinates so negative axis is up.
+    z=client_position.z_val
+    print(f"Making sure hover at: {-z} meters...",end=' ')
+    client.moveToZAsync(z, 1).join()
+    print(f"Takeoff complete!")
+    time.sleep(1)
 
     client.simPause(True)
 
@@ -151,7 +171,7 @@ def path_plan_to_target(client:airsim.MultirotorClient, target_name: str, lidar_
         print(f"detected {target_name} at {target_coord}...",end=' ')
 
         # Create a plotter for lidar data
-        lidar_plot = lidar_plotter()
+        lidar_plot = LidarPlotter()
 
         # Get Lidar data
         lidarData = client.getLidarData()
@@ -161,15 +181,35 @@ def path_plan_to_target(client:airsim.MultirotorClient, target_name: str, lidar_
         lidar_plot.update_plot(points,client,[],do_pause=True)
 
         # Do path planning and draw the path
-        lidar_plot.path_plan(lidar_plot.z_offset,target_coord)
+        relative_safe_flight_path = np.asarray(lidar_plot.path_plan(lidar_plot.z_offset,target_coord))
         lidar_plot.draw_path_plan()
         plt.show()
 
+        # Save or load the flight path
+        np.savetxt("flight_path.csv", relative_safe_flight_path, delimiter=',')
+        relative_safe_flight_path = np.genfromtxt("flight_path.csv", delimiter=',')
+
+        client_position = client.simGetVehiclePose().position
+        absolute_safe_flight_path = [   airsim.Vector3r(path_point[0]+client_position.x_val,path_point[1]+client_position.y_val,path_point[2])
+                                        for path_point in relative_safe_flight_path ]
+
+        # Show to goal points in the sim enviroment
+        client.simPlotPoints(   points = absolute_safe_flight_path,
+                                color_rgba=[1.0, 0.0, 0.0, 1.0], size = 25, duration = 60.0, is_persistent = False)
+        # Now unpause and follow the path
+        client.simPause(False)
+        client.moveOnPathAsync(
+                                path=absolute_safe_flight_path,
+                                velocity=5, timeout_sec=120,
+                                drivetrain=airsim.DrivetrainType.ForwardOnly,
+                                yaw_mode=airsim.YawMode(False,0),
+                                lookahead=1, adaptive_lookahead=1 ).join()
+
     else:
         print(f"{target_name} not detected...",end=' ')
+        client.simPause(False)
 
-    client.simPause(False)
-
+    client.enableApiControl(False)
     print("Complete!")
 
 
