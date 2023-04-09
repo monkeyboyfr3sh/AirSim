@@ -13,9 +13,9 @@ class MapDescription():
 
 def generate_all_points(map_description : MapDescription):
     return np.array([   (x, y, z) 
-                        for x in range(map_description.xmin,map_description.xmax+1,int(map_description.xstep))
-                        for y in range(map_description.ymin,map_description.ymax+1,int(map_description.ystep))
-                        for z in range(map_description.zmin,map_description.zmax+1,int(map_description.zstep))])
+                        for x in range(int(map_description.xmin),int(map_description.xmax+1),int(map_description.xstep))
+                        for y in range(int(map_description.ymin),int(map_description.ymax+1),int(map_description.ystep))
+                        for z in range(int(map_description.zmin),int(map_description.zmax+1),int(map_description.zstep))])
 
 def slow_generate_valid_points(obstacle_points, all_points, save_filename = None, distance_threshold : int = 10):
 

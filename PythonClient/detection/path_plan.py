@@ -29,13 +29,19 @@ def get_best_neighbor(goal_index, neighbors, valid_points):
         return np.where(np.all(valid_points == neighbors[best_neighbor_index], axis=1))[0][0]
     return None
 
-def recursive_search(start_index, goal_index, valid_points, search_radius=10.0, max_path_length = 1000):
+def recursive_search(start_index, goal_index, valid_points, search_radius=10.0, max_path_length = 1000, final_distance_threshold = 0):
     # Initialize the path with the starting point
     path = [start_index]
     path_length = 0
 
     # Loop until the goal is reached
     while path[-1] != goal_index:
+
+        # Check distance of last checkpoint from goal, break if less than threshold
+        distance = np.linalg.norm(valid_points[path[-1]] - valid_points[goal_index])
+        if (distance < final_distance_threshold) and (final_distance_threshold != 0):
+            break
+
         # Get the neighbors of the current point
         neighbors = get_neighbors(path[-1], valid_points, search_radius=search_radius)
 
@@ -43,14 +49,14 @@ def recursive_search(start_index, goal_index, valid_points, search_radius=10.0, 
         best_neighbor_index = get_best_neighbor(goal_index, neighbors, valid_points)
 
         if (best_neighbor_index==None):
-            return None
+            return []
 
         # Add the best neighbor to the path
         path.append(best_neighbor_index)
 
         path_length+=1
         if(path_length>=max_path_length):
-            return None
+            return []
 
     # TODO: Maybe implement a pruning step?
 

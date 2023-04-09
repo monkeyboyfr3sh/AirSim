@@ -20,9 +20,7 @@ from queue import Queue
 
 from simulation_tasks import viewer_task
 
-DRONE_HEIGHT = -6
-DISTANCE_CLOSE = 10
-DISTANCE_FAR = 20
+DRONE_HEIGHT = -10
 
 if __name__ == "__main__":
     

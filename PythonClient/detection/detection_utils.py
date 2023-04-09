@@ -29,12 +29,25 @@ def get_fpv_frame(client:airsim.MultirotorClient, camera_name = "0", image_type 
     png = cv2.imdecode(airsim.string_to_uint8_array(rawImage), cv2.IMREAD_UNCHANGED)
     return png
 
-def draw_HUD(png,client:airsim.MultirotorClient):
+def draw_HUD(png: cv2.Mat, client:airsim.MultirotorClient):
+
+    # Get width/height
+    image_width = png.shape[1]
+    image_height = png.shape[0]
+    center_x = int(image_width / 2)
+    center_y = int(image_height / 2)
+
+    # Put a rectangle background for text
+    box_color = (0,0,0)
+    cv2.rectangle(png,(0,image_height),(int(image_width*0.58),image_height-40),box_color,-1)
+    cv2.rectangle(png,(0,image_height),(int(image_width*0.38),image_height-60),box_color,-1)
+    cv2.rectangle(png,(0,image_height),(int(image_width*0.20),image_height-85),box_color,-1)
 
     # draw position in the bottom left corner
+    text_margin = 10
     position = client.simGetVehiclePose().position
     position_text = "Position: ({:.2f}, {:.2f}, {:.2f})".format(position.x_val, position.y_val, position.z_val)
-    cv2.putText(png, position_text, (20, png.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
+    cv2.putText(png, position_text, (text_margin,image_height-20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
 
     # draw orientation in the bottom left corner (Converted to direction)
     orientation = client.simGetVehiclePose().orientation
@@ -42,12 +55,10 @@ def draw_HUD(png,client:airsim.MultirotorClient):
     yaw = fix_yaw_range(yaw)
     orientation_text = "Orientation: {}".format(Direction(orientation.z_val).get_direction())
     pitch_roll_yaw_text = f"Yaw: {round(yaw,2)}"
-    cv2.putText(png, orientation_text, (20, png.shape[0]-40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
-    cv2.putText(png, pitch_roll_yaw_text, (20, png.shape[0]-60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
+    cv2.putText(png, orientation_text, (text_margin, image_height-40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
+    cv2.putText(png, pitch_roll_yaw_text, (text_margin, image_height-60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), thickness=2)
 
     # draw cross in the center of the frame
-    center_x = int(png.shape[1] / 2)
-    center_y = int(png.shape[0] / 2)
     cv2.line(png, (center_x - 10, center_y), (center_x + 10, center_y), (0, 0, 255), thickness=2)
     cv2.line(png, (center_x, center_y - 10), (center_x, center_y + 10), (0, 0, 255), thickness=2)
 
@@ -238,6 +249,11 @@ def rotate_point(x, y, z, angle_offset):
     point = np.array([x, y])
     new_point = rotation_matrix @ point
     return new_point[0], new_point[1], z
+
+def rotate_path_from_yaw(path, yaw_offset):
+    yaw_offset = fix_yaw_range(yaw_offset)
+    rotated_path = [ rotate_point(point[0], point[1], point[2], yaw_offset) for point in path]
+    return rotated_path
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt

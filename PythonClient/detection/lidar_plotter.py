@@ -41,15 +41,7 @@ class LidarPlotter():
         self.y_list = []
         self.z_list = []
         self.points_filtered = []
-        # For path planning
-        path_map = MapDescription(
-            -100,    100,     1.0,  # X
-            -100,    100,     1.0,  # Y
-            -10,    10,     2.0   # Z
-        )
-        self.all_points = generate_all_points(path_map)
         self.path_plan_timestamp = 0
-        self.path_ready = False
         self.z_offset = 0
 
     def reset_min_max(self):
@@ -101,11 +93,19 @@ class LidarPlotter():
                 X, Y, Z = cuboid_data(center, (length, width, height))
                 self.ax.plot_wireframe(X, Y, Z, color='b', rstride=1, cstride=1, alpha=1, edgecolor='red')
 
-    def path_plan(self, z_offset, goal_coordinate):
+    def path_plan(self, z_offset, goal_coordinate, plot_path = False):
         obstacles = self.points_filtered
         # Generate the points on the fly
-        valid_points = fast_generate_valid_points(obstacles,self.all_points,distance_threshold=5.0)
-        ret_path = None
+        # For path planning
+        path_map = MapDescription(
+            -100,    100,     2.0,  # X
+            -100,    100,     2.0,  # Y
+            -4+z_offset,4+z_offset,2.0   # Z
+        )
+        self.all_points = generate_all_points(path_map)
+        valid_points = fast_generate_valid_points(obstacles,self.all_points,distance_threshold=3.0)
+        self.valid_points = valid_points
+        ret_path = []
         if not (valid_points.size==0):
 
             # Select the point closest to expected start location
@@ -122,21 +122,22 @@ class LidarPlotter():
             self.start_position = valid_points[closest_start_index]
             self.stop_position = valid_points[closest_stop_index]
 
-            # Get the neighbors
-            path = recursive_search(closest_start_index,closest_stop_index,valid_points,search_radius=2.0)
-            ret_path = valid_points[path]
-            self.path_list = valid_points[path]
-            self.valid_points = valid_points
-            self.path_ready = True
+            # Get the path
+            path = recursive_search(closest_start_index,closest_stop_index,valid_points,search_radius=4.0,final_distance_threshold=5.0)
+            if(len(path)>0):
+                ret_path = valid_points[path]
+                self.path_list = valid_points[path]
+
+                # Supposed to plot path post planning
+                if (plot_path):
+                    # self.ax.scatter( valid_points[:,0], valid_points[:,1], -valid_points[:,2], linewidths=1,c='purple')
+                    self.ax.scatter( self.start_position[0], self.start_position[1], -self.start_position[2],linewidths=5,c='blue')
+                    self.ax.scatter( self.path_list[:,0], self.path_list[:,1], -self.path_list[:,2], linewidths=2,c='yellow')
+                    self.ax.scatter( self.stop_position[0], self.stop_position[1], -self.stop_position[2], linewidths=5,c='green')
 
         return ret_path
 
-    def draw_path_plan(self, path = None):
-        self.ax.scatter( self.start_position[0], self.start_position[1], -self.start_position[2],linewidths=5,c='blue')
-        self.ax.scatter( self.path_list[:,0], self.path_list[:,1], -self.path_list[:,2], linewidths=2,c='red')
-        self.ax.scatter( self.stop_position[0], self.stop_position[1], -self.stop_position[2], linewidths=5,c='green')
-
-    def update_plot(self,points: np.ndarray, client:airsim.MultirotorClient, detect_objects: list, pause_time = 0.1, lidar_offset=0.15, do_pause = True):
+    def update_plot(self,points: np.ndarray, client:airsim.MultirotorClient, detect_objects: list, pause_time = 0.1, lidar_offset=0.15, do_pause = True, show_filtered = True):
         
         # Update height
         client_height = -client.simGetVehiclePose().position.z_val
@@ -159,8 +160,10 @@ class LidarPlotter():
         self.draw_detection_boxes(detect_objects)
 
         # plot the data
-        self.ax.scatter( self.x_list, self.y_list, self.z_list,
-                linewidths=0.5,c=self.z_list)
+        if(show_filtered):
+            self.ax.scatter( self.x_list, self.y_list, self.z_list,
+                    linewidths=0.5,c=self.z_list)
+        # Plot drone position
         self.ax.quiver(0, 0, client_height, 3, 0, 0,linewidth=8,color='red')
 
         # Print the client height inside the figure
