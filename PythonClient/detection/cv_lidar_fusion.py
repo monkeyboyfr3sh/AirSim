@@ -33,10 +33,10 @@ if __name__ == "__main__":
     dt_util.detection_filter_on_off(client, True, detect_filter)
     detect_filter = "Car*"
     dt_util.detection_filter_on_off(client, True, detect_filter)
-    detect_filter = "Deer*"
-    dt_util.detection_filter_on_off(client, True, detect_filter)
-    detect_filter = "Raccoon*"
-    dt_util.detection_filter_on_off(client, True, detect_filter)
+    # detect_filter = "Deer*"
+    # dt_util.detection_filter_on_off(client, True, detect_filter)
+    # detect_filter = "Raccoon*"
+    # dt_util.detection_filter_on_off(client, True, detect_filter)
     # detect_filter = "InstancedFoliageAct*"
     # detection_filter_on_off(client, True, detect_filter)
 

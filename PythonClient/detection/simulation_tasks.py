@@ -61,21 +61,21 @@ def navigate_to_monument(client:airsim.MultirotorClient, z: float, hover_duratio
     print("Starting path 1...",end=' ')
     client.moveOnPathAsync(
                             path=path_1,
-                            velocity=5, timeout_sec=120,
+                            velocity=10, timeout_sec=120,
                             drivetrain=airsim.DrivetrainType.ForwardOnly,
                             yaw_mode=airsim.YawMode(False,0),
                             lookahead=20, adaptive_lookahead=1 ).join()
     print("Starting path 2...",end=' ')
     client.moveOnPathAsync(
                             path=path_2,
-                            velocity=5, timeout_sec=120,
+                            velocity=10, timeout_sec=120,
                             drivetrain=airsim.DrivetrainType.ForwardOnly,
                             yaw_mode=airsim.YawMode(False,0),
                             lookahead=10, adaptive_lookahead=1 ).join()
     print("Starting path 3...",end=' ')
     client.moveOnPathAsync(
                             path=path_3,
-                            velocity=5, timeout_sec=120,
+                            velocity=10, timeout_sec=120,
                             drivetrain=airsim.DrivetrainType.ForwardOnly,
                             yaw_mode=airsim.YawMode(False,0),
                             lookahead=10, adaptive_lookahead=1 ).join()
@@ -160,7 +160,9 @@ def path_plan_to_target(client:airsim.MultirotorClient, target_name: str, lidar_
     client.moveToZAsync(z, 1).join()
     print(f"Takeoff complete!")
     time.sleep(1) # TODO: should just poll till 'stable' 
-    client.simPause(True)
+
+    # First center the drone 
+    dt_util.center_on_detection(client,target_name)
 
     # Get orientation, and yaw
     client_orientation = client.simGetVehiclePose().orientation
@@ -168,6 +170,8 @@ def path_plan_to_target(client:airsim.MultirotorClient, target_name: str, lidar_
 
     # Get XYZ of target
     target_coord = dt_util.get_detect_coordinates(client, target_name)
+
+    client.simPause(True)
 
     # Only work if object to dete
     if not(target_coord==None):
@@ -212,10 +216,11 @@ def path_plan_to_target(client:airsim.MultirotorClient, target_name: str, lidar_
 
             # Now unpause and follow the path
             client.simPause(False)
+
             client.moveOnPathAsync(
                                     path=flight_vectors,
                                     velocity=5, timeout_sec=120,
-                                    drivetrain=airsim.DrivetrainType.MaxDegreeOfFreedom,
+                                    drivetrain=airsim.DrivetrainType.ForwardOnly,
                                     yaw_mode=airsim.YawMode(False,0),
                                     lookahead=1, adaptive_lookahead=1 ).join()
 
@@ -225,8 +230,8 @@ def path_plan_to_target(client:airsim.MultirotorClient, target_name: str, lidar_
             client.moveToZAsync(z, 2).join()
             time.sleep(1)
 
-            # First center the drone 
-            dt_util.center_on_detection(client,target_name)
+            # # First center the drone 
+            # dt_util.center_on_detection(client,target_name)
         else:
             print("No path found")
     else:
