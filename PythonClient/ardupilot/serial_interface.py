@@ -6,13 +6,16 @@ import queue
 import threading
 import time
 
+# Define an enumeration for command codes
 class CommandCode(Enum):
     ACK = 1
     STRING_CMD = 2
     INT_CMD = 3
     # ... other command codes
 
+# Define a base class for serial communication interfaces
 class SerialIF():
+    # Define enumerations for stream types and error types
     class SerialStreamTypes(Enum):
         UDP_STREAM = 0
         UART_STREAM = 1
@@ -23,6 +26,7 @@ class SerialIF():
         NO_TARGET = -1
         OK = 0
 
+    # Constructor
     def __init__(self) -> None:
         self.stream_type = None
         self.stream_thread = None
@@ -34,15 +38,18 @@ class SerialIF():
         self.command_handlers = {
             CommandCode.ACK: self.write_ack,
             CommandCode.STRING_CMD: lambda x: self.write_string_cmd(x),
+            CommandCode.INT_CMD: lambda x: self.write_stream_bytes(bytes(x)),
             # ... other command handlers
         }
 
+    # Callable function to execute command handlers
     def __call__(self, command_code, arg = None):
         if arg is not None:
             self.command_handlers[command_code](arg)
         else:
             self.command_handlers[command_code]()
 
+    # Abstract methods for handling streams
     def init_stream(self) -> SerialErrorTypes:
         pass
     def close_stream(self) -> SerialErrorTypes:
@@ -52,17 +59,19 @@ class SerialIF():
     def write_stream_bytes(self, data:bytes) -> SerialErrorTypes:
         self.tx_byte_count+=len(data)
 
+    # Method to write a string command
     def write_string_cmd(self, input_string) -> SerialErrorTypes:
         message = "\x07"
         message = message+str(input_string) # Append the string
         return self.write_stream_bytes(message.encode())
-    
+
+    # Method to write an acknowledgement
     def write_ack(self) -> SerialErrorTypes:
         message = "\x06"
         return self.write_stream_bytes(message.encode())
-
-
+        
 class SerialUDPIF(SerialIF):
+    # Constructor
     def __init__(self) -> None:
         super().__init__()
         self.stream_type = self.SerialStreamTypes.UDP_STREAM
@@ -70,6 +79,7 @@ class SerialUDPIF(SerialIF):
         self.udp_port = 12345
         self.target_addr = None
 
+    # Thread function to receive data from the UDP socket
     def udp_rstream_task(self):
         while True:
             try:
@@ -79,23 +89,24 @@ class SerialUDPIF(SerialIF):
                 break
         self.control_queue.put(-1)
 
+    # Initialize the UDP stream
     def init_stream(self, wait_for_ack = False, stream_timeout=0.5) -> SerialIF.SerialErrorTypes:
         super().init_stream()
-        
+
         # Create a UDP socket
         try:
             self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.udp_sock.bind((self.udp_ip, self.udp_port))
         except:
             return SerialIF.SerialErrorTypes.STREAM_INIT_FAIL
-        
+
         # Fork a thread to receive data from this socket
         self.stream_thread = threading.Thread(
             target=self.udp_rstream_task)
         self.stream_thread.start()
 
         if(wait_for_ack):
-            # Wait of the initial message of the FC
+            # Wait for the initial message of the FC
             while (self.read_stream_bytes() == b''):
                 pass
             # Send a message
@@ -114,7 +125,7 @@ class SerialUDPIF(SerialIF):
             self.udp_sock.close()
         except:
             return SerialIF.SerialErrorTypes.STREAM_CLOSE_FAIL
-        
+
         return SerialIF.SerialErrorTypes.OK
 
     def read_stream_bytes(self) -> bytes:
@@ -133,7 +144,7 @@ class SerialUDPIF(SerialIF):
             return SerialIF.SerialErrorTypes.OK
         else:
             return SerialIF.SerialErrorTypes.NO_TARGET
-        
+
 # Check if the script is being run as the main program
 if __name__ == "__main__":
 
@@ -145,10 +156,11 @@ if __name__ == "__main__":
     write_timestamp = time.time()
 
     # Commands to queue up
-    command_string = "This is a string command, can you hear me? I'm making this a longer message for funsies"
+    command_string = "This is a string command, can you hear me? I'm making this a throughput by doign thistr?"
     command_queue = []
-    command_queue.extend([ (CommandCode.STRING_CMD,command_string) for i in range(100) ])
-    # command_queue.extend([ (CommandCode.ACK,None) for i in range(5) ])
+    command_queue.extend([ (CommandCode.STRING_CMD,command_string) for i in range(10) ])
+    command_queue.extend([ (CommandCode.INT_CMD,i) for i in range(10) ])
+    command_queue.extend([ (CommandCode.ACK,None) for i in range(10) ])
 
     start_time = time.time()
 
@@ -160,7 +172,7 @@ if __name__ == "__main__":
     for command, arg in command_queue:
 
         # Get the next command from the queue
-        if command == CommandCode.STRING_CMD:
+        if command is not None:
             udp_stream(command,arg)
         else:
             udp_stream(command)
@@ -185,9 +197,10 @@ if __name__ == "__main__":
 
     runtime = stop_time-start_time
     throughput = udp_stream.tx_byte_count/runtime
+    throughput_KBs = throughput/1024
 
     print(f"Sent {udp_stream.tx_byte_count} bytes in {round(runtime,2)}s")
-    print(f"Throughput: {round(throughput,2)}B/s")
+    print(f"Throughput: {round(throughput_KBs,2)} KB/s")
 
     # Close the serial stream
     udp_stream.close_stream()
