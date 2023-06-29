@@ -406,3 +406,4 @@ PythonClient/yolov5s.pt
 .gitignore
 PythonClient/bus.jpg
 PythonClient/zidane.jpg
+PythonClient/data/*

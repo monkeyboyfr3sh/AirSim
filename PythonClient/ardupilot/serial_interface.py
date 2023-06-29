@@ -5,6 +5,11 @@ import socket
 import queue
 import threading
 import time
+import random
+import string
+import csv
+import numpy as np
+import os
 
 # Define an enumeration for command codes
 class CommandCode(Enum):
@@ -48,6 +53,10 @@ class SerialIF():
             self.command_handlers[command_code](arg)
         else:
             self.command_handlers[command_code]()
+
+    # Clear number of bytes sent
+    def clear_byte_count(self):
+        self.tx_byte_count = 0
 
     # Abstract methods for handling streams
     def init_stream(self) -> SerialErrorTypes:
@@ -145,47 +154,36 @@ class SerialUDPIF(SerialIF):
         else:
             return SerialIF.SerialErrorTypes.NO_TARGET
 
-# Check if the script is being run as the main program
-if __name__ == "__main__":
-
-    # Timeout for the command write
-    write_timeout = 2
-
+def run_udp_stream(serial_stream:SerialIF, command_queue, write_timeout=2):
     # Runtime flags
-    wait_for_ack = False
-    write_timestamp = time.time()
-
-    # Commands to queue up
-    command_string = "This is a string command, can you hear me? I'm making this a throughput by doign thistr?"
-    command_queue = []
-    command_queue.extend([ (CommandCode.STRING_CMD,command_string) for i in range(10) ])
-    command_queue.extend([ (CommandCode.INT_CMD,i) for i in range(10) ])
-    command_queue.extend([ (CommandCode.ACK,None) for i in range(10) ])
-
     start_time = time.time()
+    
+    # Begginning message
+    print(f"Running UDP stream with {len(command_queue)} commands of length {len(command_queue[0][1])}...")
 
-    # Init the serial stream
-    udp_stream = SerialUDPIF()
-    udp_stream.init_stream(wait_for_ack=True)
+    latency_list = []
 
     # Loop until all commands have been sent and acknowledged
     for command, arg in command_queue:
 
         # Get the next command from the queue
         if command is not None:
-            udp_stream(command,arg)
+            serial_stream(command,arg)
         else:
-            udp_stream(command)
+            serial_stream(command)
 
+        # Start of transmission
         write_timestamp = time.time()
+
         while True:
 
             # Read the stream for incoming messages
-            data = udp_stream.read_stream_bytes()
+            data = serial_stream.read_stream_bytes()
 
             # If a message is received
             if not (data==b''):
-                print(f"Received message: {data.decode()}")
+                latency_list.append(time.time()-write_timestamp)
+                print(f"Received message: {data.decode()}",end='\r')
                 break
 
             # If the command has not been acknowledged within the timeout period, try again
@@ -193,15 +191,73 @@ if __name__ == "__main__":
                 print("Timing out...")
                 break
 
-    stop_time = time.time()
+    average_latency_ms = np.asarray(latency_list).mean()*1000
 
-    runtime = stop_time-start_time
-    throughput = udp_stream.tx_byte_count/runtime
-    throughput_KBs = throughput/1024
+    # Calculate throughput
+    runtime = time.time() - start_time
+    throughput = serial_stream.tx_byte_count / runtime
+    throughput_KBs = throughput / 1024
 
-    print(f"Sent {udp_stream.tx_byte_count} bytes in {round(runtime,2)}s")
-    print(f"Throughput: {round(throughput_KBs,2)} KB/s")
+    return runtime, throughput_KBs, average_latency_ms
 
-    # Close the serial stream
+def generate_random_string(length):
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(length))
+
+def create_data_file(num_commands, payload_len):
+    print(f"Creating a payload file for {num_commands} commands, of size {payload_len}... ",end='')
+    # Generate commands and write to file
+    command_queue = []
+    relative_path = os.path.join("./data",f"commands_{num_commands}_{payload_len}.txt")
+    with open(relative_path, 'w') as f:
+        for i in range(num_commands):
+            command_string = generate_random_string(payload_len-1)
+            command_queue.append((CommandCode.STRING_CMD, command_string))
+            f.write(command_string + '\n')
+    print("Done!")
+
+# Check if the script is being run as the main program
+if __name__ == "__main__":
+
+    LOG_FNAME = "throughput_latency.csv"
+    wr_relative_path = os.path.join("./data",LOG_FNAME)
+
+    # Payload sizes to write/read
+    payload_sizes = [32,128,512,1024,2048,4096,8192,16384,32768]    
+
+    # for payload_size in payload_sizes:
+    #     # File to create
+    #     NUM_COMMANDS = 1000
+    #     PAYLOAD_LEN = payload_size
+    #     create_data_file(NUM_COMMANDS,PAYLOAD_LEN)
+
+    # Init the serial stream
+    udp_stream = SerialUDPIF()
+    udp_stream.init_stream(wait_for_ack=True)
+
+    # Loop over payload sizes
+    for payload_size in payload_sizes:
+        # Read commands from file
+        rd_relative_path = os.path.join("./data",f"commands_1000_{payload_size}.txt")
+        with open(rd_relative_path, 'r') as f:
+            command_queue = [(CommandCode.STRING_CMD, line.strip()) for line in f.readlines()]
+
+        # Run UDP stream and measure throughput
+        runtime, throughput_KBs, average_latency_ms = run_udp_stream(udp_stream, command_queue, write_timeout=2)
+        throughput_MBs = throughput_KBs / 1024
+
+        # Print results
+        print(f"Runtime: {round(runtime,2)} s; Throughput: {round(throughput_KBs,2)} KB/s; {round(throughput_MBs,2)} MB/s; average latency {round(average_latency_ms,2)} ms")
+
+        # Open CSV file for appending
+        with open(wr_relative_path, mode='a', newline='') as f:
+            writer = csv.writer(f)
+
+            # Append throughput to CSV file
+            writer.writerow([payload_size, throughput_KBs, average_latency_ms])
+
+        # Close the serial stream
     udp_stream.close_stream()
 
+    # Print confirmation message
+    print(f'Results written to {LOG_FNAME}')
