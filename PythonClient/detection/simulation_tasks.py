@@ -277,7 +277,31 @@ def create_task_client(target,args=None,start_task=False) -> threading.Thread:
             task_thread.start()
         return task_thread, task_client
 
+from nav_gui_base import Ui_Dialog
+
+from PyQt6 import QtCore, QtGui, QtWidgets
+
+class CustomDialog(QtWidgets.QDialog, Ui_Dialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+
+        self.navigate_button.pressed.connect(self.navigate_pressed)
+        self.stop_navigate_button.pressed.connect(self.stop_navigate_pressed)
+
+    def navigate_pressed(self):
+        print("Navigate button pressed")
+
+    def stop_navigate_pressed(self):
+        print("Stop Navigate button pressed")
+
 def viewer_task(z: float, png_queue: Queue):
+
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    dialog = CustomDialog()
+    dialog.exec()
+    sys.exit(app.exec())
 
     target_name = "Monument_01_176"
     # target_name = "Car_35"
