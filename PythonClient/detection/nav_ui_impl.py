@@ -94,8 +94,21 @@ class NavUIDialog(QtWidgets.QDialog, nav_gui_base.Ui_Dialog):
         self.task_thread = threading.Thread()
 
     def blank_graphics_view(self):
+
+        # Blank the screen
         self.graphicsView.setScene(QtWidgets.QGraphicsScene())
         self.graphicsView.scene().clear()
+
+        # Try setting an immage as background
+        try:
+            # Then display an image
+            png = cv2.imread("./disconnect_meme.jpg")
+            h, w, ch = png.shape
+            bytes_per_line = ch * w
+            image = QtGui.QImage(png.tobytes(), w, h, bytes_per_line, QtGui.QImage.Format.Format_BGR888)
+            self.update_stream(image)
+        except:
+            print("Err setting image")
 
     def closeEvent(self, event):
         pass

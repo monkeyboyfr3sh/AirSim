@@ -17,9 +17,9 @@ def create_dialog(CustomDialogImpl: QtWidgets.QDialog, dialog_name = None, pos =
                           QtCore.Qt.WindowType.WindowMinimizeButtonHint |
                           QtCore.Qt.WindowType.WindowMaximizeButtonHint |
                           QtCore.Qt.WindowType.WindowMinMaxButtonsHint )
+    
+    # Read the the size then set fixed window
     size = customDialog.size()
-    # customDialog.setFixedSize(size)
-    print(f"size: {size.height()} {size.width()}")
     customDialog.setFixedSize(size)
     return customDialog
 
