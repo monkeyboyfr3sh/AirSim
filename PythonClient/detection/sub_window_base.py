@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'nav_gui.ui'
+# Form implementation generated from reading ui file 'sub_window.ui'
 #
 # Created by: PyQt6 UI code generator 6.4.2
 #
