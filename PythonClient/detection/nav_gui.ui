@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1142</width>
-    <height>600</height>
+    <width>516</width>
+    <height>712</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>480</y>
+     <y>360</y>
      <width>81</width>
      <height>31</height>
     </rect>
@@ -30,7 +30,7 @@
    <property name="geometry">
     <rect>
      <x>210</x>
-     <y>430</y>
+     <y>310</y>
      <width>101</width>
      <height>31</height>
     </rect>
@@ -43,56 +43,10 @@
    <property name="geometry">
     <rect>
      <x>70</x>
-     <y>160</y>
+     <y>40</y>
      <width>381</width>
      <height>261</height>
     </rect>
-   </property>
-  </widget>
-  <widget class="QMdiArea" name="mdiArea">
-   <property name="geometry">
-    <rect>
-     <x>510</x>
-     <y>90</y>
-     <width>601</width>
-     <height>481</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>550</x>
-     <y>30</y>
-     <width>121</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>16</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Add Widnow</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="addwindow_pushButton">
-   <property name="geometry">
-    <rect>
-     <x>690</x>
-     <y>30</y>
-     <width>171</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Add Window!</string>
    </property>
   </widget>
  </widget>

@@ -54,34 +54,12 @@ class VideoStreamDialog(QtWidgets.QDialog, nav_gui_base.Ui_Dialog):
         self.navigate_button.clicked.connect(self.start_stream)
         self.stop_navigate_button.clicked.connect(self.stop_stream)
 
-        # Setup add window button
-        self.addwindow_pushButton.clicked.connect(self.add_window)
-        
-        # Setup for multiple displays
-        # self.mdiArea.
-
     def start_stream(self):
         self.worker.start()
 
     def stop_stream(self):
         self.worker.stop_stream()
         self.worker.terminate()
-
-    def add_window(self):
-        VideoStreamDialog.count = VideoStreamDialog.count + 1
-        # Create sub window
-        sub = QMdiSubWindow()
-        # Do stuff inside sub window
-        sub.setWidget(QTextEdit())
-        # Set the titlebar of sub window
-        sub.setWindowTitle(f"Subby Window {VideoStreamDialog.count}")
-        # Add subwindow in mdi
-        self.mdiArea.addSubWindow(sub)
-
-        # Show the window
-        sub.show()
-
-        self.mdiArea.cascadeSubWindows()
 
     @QtCore.pyqtSlot(QtGui.QImage)
     def update_stream(self, image):
@@ -101,14 +79,33 @@ class VideoStreamDialog(QtWidgets.QDialog, nav_gui_base.Ui_Dialog):
         self.worker.wait()
         self.blank_graphics_view()
 
-class SubWindowDialog(QtWidgets.QDialog, nav_gui_base.Ui_Dialog):
+class SubWindowDialog(QtWidgets.QDialog, sub_window_base.Ui_Dialog):
 
     def __init__(self):
         super().__init__()
         self.setupUi(self)
 
+        # Setup add window button
+        self.addwindow_pushButton.clicked.connect(self.add_window)
+
         # self.navigate_button.pressed.connect(self.start_stream)
         # self.stop_navigate_button.pressed.connect(self.stop_stream)
+
+    def add_window(self):
+        VideoStreamDialog.count = VideoStreamDialog.count + 1
+        # Create sub window
+        sub = QMdiSubWindow()
+        # Do stuff inside sub window
+        sub.setWidget(QTextEdit())
+        # Set the titlebar of sub window
+        sub.setWindowTitle(f"Subby Window {VideoStreamDialog.count}")
+        # Add subwindow in mdi
+        self.mdiArea.addSubWindow(sub)
+
+        # Show the window
+        sub.show()
+
+        self.mdiArea.cascadeSubWindows()
 
 #     def start_stream(self):
 #         self.timer.start(10)  # Set the desired interval in milliseconds (30 fps = 33 ms)
@@ -146,41 +143,34 @@ class SubWindowDialog(QtWidgets.QDialog, nav_gui_base.Ui_Dialog):
 #         print("Stop Navigate button pressed")
 # self.capture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
+def create_dialog(CustomDialogImpl, dialog_name = None, pos = (100,100)):
+
+    customDialog = CustomDialogImpl()
+    customDialog.setWindowTitle(dialog_name)
+    customDialog.move(pos[0], pos[0])
+    customDialog.setWindowFlags(customDialog.windowFlags() | 
+                          QtCore.Qt.WindowType.WindowMinimizeButtonHint |
+                          QtCore.Qt.WindowType.WindowMaximizeButtonHint |
+                          QtCore.Qt.WindowType.WindowMinMaxButtonsHint )
+    
+    return customDialog
+
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
 
-    # dialog = VideoStreamDialog()
-    # sub_dialog = SubWindowDialog()
+    dialog_list = []
 
-    # dialog.show()
-    # sub_dialog.show()
-
-
-
-
-    # dialog = VideoStreamDialog()
-    # sub_dialog = SubWindowDialog()
-
-    # dialog.show()
-    # sub_dialog.show()
-
-    dialog = VideoStreamDialog()
-    # dialog = QtWidgets.QDialog()
-    dialog.setWindowTitle("Main Dialog")
-    dialog.move(100, 100)
-    # dialog.setGeometry(100, 100, 400, 300)
-
-    sub_dialog = SubWindowDialog()
-    # sub_dialog = QtWidgets.QDialog(dialog)
-    sub_dialog.setWindowTitle("Sub Dialog")
-    sub_dialog.move(300, 300)
-    # sub_dialog.setGeometry(dialog.geometry().right() + 10, dialog.geometry().top(), 300, 200)
-
-    dialog.show()
-    sub_dialog.show()
+    # Create the main dialog
+    dialog_list.append( create_dialog(VideoStreamDialog,
+                           pos=(100, 100),dialog_name="Main Window"))
+    # Create the sub dialog
+    dialog_list.append( create_dialog(SubWindowDialog,
+                               pos=(300, 300),dialog_name="Subby Wubby"))
 
 
-    
+    for dialog in dialog_list:
+        dialog.show()
+
     sys.exit(app.exec())
-
