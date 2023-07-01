@@ -28,11 +28,11 @@ if __name__ == "__main__":
     dialog_list = []
 
     # Create the main dialog
-    dialog_list.append( create_dialog(nav_ui.VideoStreamDialog,
+    dialog_list.append( create_dialog(nav_ui.NavUIDialog,
                            pos=(100, 100),dialog_name="Main Window"))
-    # Create the sub dialog
-    dialog_list.append( create_dialog(sub_window_ui.SubWindowDialog,
-                               pos=(300, 300),dialog_name="Subby Wubby"))
+    # # Create the sub dialog
+    # dialog_list.append( create_dialog(sub_window_ui.SubWindowDialog,
+    #                            pos=(300, 300),dialog_name="Subby Wubby"))
 
 
     for dialog in dialog_list:

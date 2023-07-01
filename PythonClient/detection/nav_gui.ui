@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>516</width>
-    <height>712</height>
+    <width>598</width>
+    <height>720</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,11 +16,16 @@
   <widget class="QPushButton" name="navigate_button">
    <property name="geometry">
     <rect>
-     <x>220</x>
-     <y>360</y>
-     <width>81</width>
+     <x>270</x>
+     <y>390</y>
+     <width>121</width>
      <height>31</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
    </property>
    <property name="text">
     <string>Navigate</string>
@@ -29,11 +34,16 @@
   <widget class="QPushButton" name="stop_navigate_button">
    <property name="geometry">
     <rect>
-     <x>210</x>
-     <y>310</y>
-     <width>101</width>
+     <x>270</x>
+     <y>350</y>
+     <width>121</width>
      <height>31</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
    </property>
    <property name="text">
     <string>Stop Navigate</string>
@@ -44,9 +54,50 @@
     <rect>
      <x>70</x>
      <y>40</y>
-     <width>381</width>
-     <height>261</height>
+     <width>480</width>
+     <height>270</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="airsimConnect_button">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>500</y>
+     <width>101</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>Connect</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="airsimDisconnect_button">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>550</y>
+     <width>101</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>Disconnect</string>
    </property>
   </widget>
  </widget>
