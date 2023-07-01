@@ -50,6 +50,12 @@ class Ui_Dialog(object):
         self.label.setFont(font)
         self.label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.label.setObjectName("label")
+        self.resetButton = QtWidgets.QPushButton(parent=Dialog)
+        self.resetButton.setGeometry(QtCore.QRect(360, 660, 121, 31))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.resetButton.setFont(font)
+        self.resetButton.setObjectName("resetButton")
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -62,6 +68,7 @@ class Ui_Dialog(object):
         self.airsimConnect_button.setText(_translate("Dialog", "Connect"))
         self.airsimDisconnect_button.setText(_translate("Dialog", "Disconnect"))
         self.label.setText(_translate("Dialog", "FOV Camera"))
+        self.resetButton.setText(_translate("Dialog", "Reset"))
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QMdiSubWindow,QMdiArea,QTextEdit
 import nav_ui_impl as nav_ui
 import sub_window_impl as sub_window_ui
 
-def create_dialog(CustomDialogImpl, dialog_name = None, pos = (100,100)):
+def create_dialog(CustomDialogImpl: QtWidgets.QDialog, dialog_name = None, pos = (100,100)):
 
     customDialog = CustomDialogImpl()
     customDialog.setWindowTitle(dialog_name)
@@ -17,7 +17,10 @@ def create_dialog(CustomDialogImpl, dialog_name = None, pos = (100,100)):
                           QtCore.Qt.WindowType.WindowMinimizeButtonHint |
                           QtCore.Qt.WindowType.WindowMaximizeButtonHint |
                           QtCore.Qt.WindowType.WindowMinMaxButtonsHint )
-    
+    size = customDialog.size()
+    # customDialog.setFixedSize(size)
+    print(f"size: {size.height()} {size.width()}")
+    customDialog.setFixedSize(size)
     return customDialog
 
 if __name__ == "__main__":

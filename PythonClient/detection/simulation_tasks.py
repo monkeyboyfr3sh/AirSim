@@ -258,6 +258,9 @@ def rotate_path(client:airsim.MultirotorClient):
     client.simPlotPoints(   points = [ airsim.Vector3r(path_point[0]+client_position.x_val,path_point[1]+client_position.y_val,path_point[2]) for path_point in rotated_path ],
                         color_rgba=[1.0, 1.0, 0.0, 1.0], size = 25, duration = 1.0, is_persistent = False)
 
+def sim_reset(client:airsim.MultirotorClient):
+    client.reset()
+
 def create_task_client(target,args=None,start_task=False) -> threading.Thread:
         # Create a client for the tasks to share
         task_client = airsim.MultirotorClient()

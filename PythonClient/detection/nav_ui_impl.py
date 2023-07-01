@@ -84,6 +84,7 @@ class NavUIDialog(QtWidgets.QDialog, nav_gui_base.Ui_Dialog):
         self.airsimConnect_button.clicked.connect(self.airsim_connect)
         self.airsimDisconnect_button.clicked.connect(self.airsim_disconnect)
 
+        self.resetButton.clicked.connect(self.reset)
         self.navigate_button.clicked.connect(self.navigte)
         self.stop_navigate_button.clicked.connect(self.stop_navigate)
 
@@ -122,7 +123,11 @@ class NavUIDialog(QtWidgets.QDialog, nav_gui_base.Ui_Dialog):
                                                                      args=(self.default_z,),start_task=True)
 
     def stop_navigate(self):
-        task_thread, task_client = sim_tasks.create_task_client(target=sim_tasks.client_disarm,start_task=True)
+        self.task_thread, task_client = sim_tasks.create_task_client(target=sim_tasks.client_disarm,start_task=True)
+        self.task_thread = threading.Thread()
+
+    def reset(self):
+        self.task_thread, task_client = sim_tasks.create_task_client(target=sim_tasks.sim_reset,start_task=True)
         self.task_thread = threading.Thread()
 
     @QtCore.pyqtSlot(QtGui.QImage)
