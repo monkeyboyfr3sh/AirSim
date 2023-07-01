@@ -6,6 +6,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtWidgets import QMdiSubWindow,QMdiArea,QTextEdit
 
 import nav_ui_impl as nav_ui
+import sub_window_impl as sub_window_ui
 
 def create_dialog(CustomDialogImpl, dialog_name = None, pos = (100,100)):
 
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     dialog_list.append( create_dialog(nav_ui.VideoStreamDialog,
                            pos=(100, 100),dialog_name="Main Window"))
     # Create the sub dialog
-    dialog_list.append( create_dialog(nav_ui.SubWindowDialog,
+    dialog_list.append( create_dialog(sub_window_ui.SubWindowDialog,
                                pos=(300, 300),dialog_name="Subby Wubby"))
 
 
