@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>598</width>
-    <height>720</height>
+    <width>845</width>
+    <height>726</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,8 +16,8 @@
   <widget class="QPushButton" name="navigate_button">
    <property name="geometry">
     <rect>
-     <x>270</x>
-     <y>390</y>
+     <x>660</x>
+     <y>650</y>
      <width>121</width>
      <height>31</height>
     </rect>
@@ -34,8 +34,8 @@
   <widget class="QPushButton" name="stop_navigate_button">
    <property name="geometry">
     <rect>
-     <x>270</x>
-     <y>350</y>
+     <x>660</x>
+     <y>600</y>
      <width>121</width>
      <height>31</height>
     </rect>
@@ -52,10 +52,10 @@
   <widget class="QGraphicsView" name="graphicsView">
    <property name="geometry">
     <rect>
-     <x>70</x>
-     <y>40</y>
-     <width>480</width>
-     <height>270</height>
+     <x>60</x>
+     <y>70</y>
+     <width>720</width>
+     <height>480</height>
     </rect>
    </property>
    <property name="font">
@@ -67,8 +67,8 @@
   <widget class="QPushButton" name="airsimConnect_button">
    <property name="geometry">
     <rect>
-     <x>140</x>
-     <y>500</y>
+     <x>70</x>
+     <y>600</y>
      <width>101</width>
      <height>31</height>
     </rect>
@@ -85,8 +85,8 @@
   <widget class="QPushButton" name="airsimDisconnect_button">
    <property name="geometry">
     <rect>
-     <x>140</x>
-     <y>550</y>
+     <x>70</x>
+     <y>650</y>
      <width>101</width>
      <height>31</height>
     </rect>
@@ -98,6 +98,27 @@
    </property>
    <property name="text">
     <string>Disconnect</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>320</x>
+     <y>20</y>
+     <width>211</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>24</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>FOV Camera</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
    </property>
   </widget>
  </widget>

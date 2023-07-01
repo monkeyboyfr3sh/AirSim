@@ -7,9 +7,8 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtWidgets import QMdiSubWindow, QMdiArea, QTextEdit
 import detection_utils as dt_util
 from lidar_plotter import LidarPlotter
-import time
-from queue import Queue
-from simulation_tasks import viewer_task
+import threading
+import simulation_tasks as sim_tasks 
 
 DRONE_HEIGHT = -10
 
@@ -17,11 +16,10 @@ class AirSimConnectWorker(QtCore.QThread):
     frameCaptured = QtCore.pyqtSignal(QtGui.QImage)
     finished = QtCore.pyqtSignal(QtGui.QImage)
 
-    def __init__(self, png_queue, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         print("airsim_connect thread init")
         self.connect_command = True
-        self.png_queue = png_queue
 
     def run(self):
         print("airsim_connect thread entering")
@@ -29,6 +27,18 @@ class AirSimConnectWorker(QtCore.QThread):
         print("airsim_connect thread connecting")
         client = airsim.MultirotorClient()
         client.confirmConnection()
+
+        # Turn on detection
+        detect_filter = "Monument*"
+        dt_util.detection_filter_on_off(client, True, detect_filter)
+        detect_filter = "Car*"
+        dt_util.detection_filter_on_off(client, True, detect_filter)
+        detect_filter = "Deer*"
+        dt_util.detection_filter_on_off(client, True, detect_filter)
+        # detect_filter = "Raccoon*"
+        # dt_util.detection_filter_on_off(client, True, detect_filter)
+        # detect_filter = "InstancedFoliageAct*"
+        # detection_filter_on_off(client, True, detect_filter)
 
         while self.connect_command:
             # Decode raw image 
@@ -69,11 +79,18 @@ class NavUIDialog(QtWidgets.QDialog, nav_gui_base.Ui_Dialog):
         super().__init__(parent)
         self.setupUi(self)
 
-        self.png_queue = None
         self.airsimConnectWorker = None
 
         self.airsimConnect_button.clicked.connect(self.airsim_connect)
         self.airsimDisconnect_button.clicked.connect(self.airsim_disconnect)
+
+        self.navigate_button.clicked.connect(self.navigte)
+        self.stop_navigate_button.clicked.connect(self.stop_navigate)
+
+        self.target_name = "Monument_01_176"
+        # self.target_name = "Car_35"
+        self.default_z = DRONE_HEIGHT
+        self.task_thread = threading.Thread()
 
     def blank_graphics_view(self):
         self.graphicsView.setScene(QtWidgets.QGraphicsScene())
@@ -85,8 +102,7 @@ class NavUIDialog(QtWidgets.QDialog, nav_gui_base.Ui_Dialog):
     def airsim_connect(self):
         # Detect if we have worker
         if not self.airsimConnectWorker:
-            self.png_queue = Queue(maxsize=10) 
-            self.airsimConnectWorker = AirSimConnectWorker(self.png_queue)
+            self.airsimConnectWorker = AirSimConnectWorker()
             self.airsimConnectWorker.frameCaptured.connect(self.update_stream)
             self.airsimConnectWorker.finished.connect(self.worker_finished)  # Connect the 'finished' signal to a slot
             self.airsimConnectWorker.connect_command = True
@@ -96,6 +112,18 @@ class NavUIDialog(QtWidgets.QDialog, nav_gui_base.Ui_Dialog):
         # Detect if we have worker
         if self.airsimConnectWorker:
             self.airsimConnectWorker.connect_command = False
+
+    def navigte(self):
+        if (self.task_thread.is_alive()):
+            print("Task is already running!")
+            return
+
+        self.task_thread, task_client = sim_tasks.create_task_client(target=sim_tasks.navigate_to_monument,
+                                                                     args=(self.default_z,),start_task=True)
+
+    def stop_navigate(self):
+        task_thread, task_client = sim_tasks.create_task_client(target=sim_tasks.client_disarm,start_task=True)
+        self.task_thread = threading.Thread()
 
     @QtCore.pyqtSlot(QtGui.QImage)
     def update_stream(self, image):
